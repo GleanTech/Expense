@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#7C9A85">
-<title>收支记录 · Expense Tracker</title>
+<title>Expense Tracker</title>
 <style>
 :root{
   --bg:#F6F8F4; --surface:#FFFFFF; --surface2:#EEF3EC; --surface3:#E4ECE2;
@@ -846,10 +846,12 @@ async function saveFormRecord(force){
   closeModal(); state.form=null; state.view='manage'; render(); toast(t('saved'),'ok');
 }
 
-function jsonPayload(updateExport){
-  if(updateExport){state.meta.lastExportedAt=localISO(new Date());state.meta.lastExportRecordCount=activeRecords().length;}
-  const payload={schemaVersion:SCHEMA_VERSION,exportedAt:localISO(new Date()),meta:state.meta,dictionaries:state.dictionaries,records:state.records};
-  payload.checksum={algorithm:'fnv1a',recordCount:state.records.length,value:fnv1a(canonical(payload))};
+function jsonPayload(updateExport,stamp){
+  const exportedAt=stamp||localISO(new Date());
+  if(updateExport){state.meta.lastExportedAt=exportedAt;state.meta.lastExportRecordCount=activeRecords().length;}
+  // 深拷贝：避免随后 saveMeta() 修改 state.meta.updatedAt 后，下载内容已变而校验和还是旧值
+  const payload=JSON.parse(JSON.stringify({schemaVersion:SCHEMA_VERSION,exportedAt,meta:state.meta,dictionaries:state.dictionaries,records:state.records}));
+  payload.checksum={algorithm:'fnv1a',recordCount:payload.records.length,value:fnv1a(canonical(payload))};
   return payload;
 }
 function downloadText(text,name,mime){
@@ -858,7 +860,10 @@ function downloadText(text,name,mime){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function exportJSON(){
-  const payload=jsonPayload(true); await saveMeta();
+  const stamp=localISO(new Date());
+  state.meta.lastExportedAt=stamp;state.meta.lastExportRecordCount=activeRecords().length;
+  await saveMeta();
+  const payload=jsonPayload(false,stamp);
   const name=(state.meta.datasetName||'dataset').replace(/[\\/:*?"<>|]/g,'_')+'_'+dateInputValue(new Date()).replace(/-/g,'')+'.json';
   downloadText(JSON.stringify(payload,null,2),name);
   toast(t('exportSuccess'),'ok'); render();
