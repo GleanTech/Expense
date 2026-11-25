@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#7C9A85">
+<title>收支记录 · Expense Tracker</title>
+<style>
+:root{
+  --bg:#F6F8F4; --surface:#FFFFFF; --surface2:#EEF3EC; --surface3:#E4ECE2;
+  --primary:#7C9A85; --primary-dark:#4F6B57; --primary-soft:#E1EBE0;
+  --text:#2C3A31; --muted:#6F7F73; --border:#D7E1D5;
+  --danger:#B45F5F; --danger-soft:#F8EAEA; --warn:#B99255; --warn-soft:#F8F1E3;
+  --success:#5F8F70; --shadow:0 2px 10px rgba(76,101,83,.08);
+  --radius:14px; --radius-sm:9px;
+}
+:root[data-theme="dark"]{
+  --bg:#202823; --surface:#28322C; --surface2:#303C34; --surface3:#38463C;
+  --primary:#91AE97; --primary-dark:#B6CFB9; --primary-soft:#36493B;
+  --text:#E6EDE6; --muted:#A9B8AB; --border:#405046;
+  --danger:#D98A8A; --danger-soft:#4A3030; --warn:#D2B072; --warn-soft:#4A402D;
+  --success:#8FBE9B; --shadow:0 2px 12px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft JhengHei","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{max-width:960px;margin:0 auto;padding:18px 14px 56px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.card.wide{max-width:none}
+h1,h2,h3{margin:0 0 12px;font-weight:600;letter-spacing:.2px}
+h1{font-size:22px;color:var(--primary-dark)}
+h2{font-size:18px;color:var(--primary-dark)}
+h3{font-size:15px;margin-top:18px}
+.sub{color:var(--muted);font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.row>*{flex:1 1 220px;min-width:0}
+.row.tight>*{flex:0 1 auto}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.field label{font-size:13px;color:var(--muted)}
+.field .inline{display:flex;gap:8px;align-items:center}
+input,select,textarea{
+  width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 11px;outline:none;min-height:42px;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-soft)}
+textarea{resize:vertical;min-height:70px;overflow:hidden}
+input[type="checkbox"]{width:18px;height:18px;min-height:0;accent-color:var(--primary)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:9px 16px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:var(--surface);color:var(--text);
+  font-weight:500;transition:.15s;white-space:nowrap;
+}
+.btn:hover{background:var(--surface2);border-color:var(--primary)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-dark);border-color:var(--primary-dark)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}
+.btn.danger:hover{background:var(--danger-soft)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.small{min-height:34px;padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--muted);font-size:12px}
+.chip.ok{background:var(--primary-soft);color:var(--primary-dark)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.danger{background:var(--danger-soft);color:var(--danger)}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.info-item{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px}
+.info-item .k{font-size:12px;color:var(--muted)}
+.info-item .v{font-size:14px;font-weight:500;margin-top:2px;word-break:break-word}
+.list{display:flex;flex-direction:column;gap:10px}
+.list-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px}
+.list-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.list-title{font-weight:600}
+.list-meta{font-size:12px;color:var(--muted);margin-top:4px}
+.amount{font-variant-numeric:tabular-nums;font-weight:600}
+.amount.income{color:var(--success)}
+.amount.expense{color:var(--danger)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+th{background:var(--surface2);color:var(--muted);font-weight:500}
+tr:last-child td{border-bottom:none}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.stat{background:var(--surface2);border-radius:var(--radius-sm);padding:12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:17px;font-weight:600;margin-top:2px}
+.modal-mask{position:fixed;inset:0;background:rgba(30,42,34,.42);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:min(620px,100%);max-height:88vh;overflow:auto;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.18)}
+.modal.small{width:min(420px,100%)}
+.modal h2{font-size:18px}
+.toast-root{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;box-shadow:var(--shadow);max-width:90vw;text-align:center}
+.toast.danger{background:var(--danger);color:#fff}
+.toast.ok{background:var(--success);color:#fff}
+.dict-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.dict-row input{min-height:36px;padding:7px 9px}
+.dict-row select{min-height:36px;padding:7px 9px}
+.sep{height:1px;background:var(--border);margin:18px 0}
+.muted{color:var(--muted)}
+.missing{color:var(--danger);font-weight:600}
+.hidden{display:none!important}
+.wizard-step{display:flex;gap:6px;margin-bottom:18px}
+.dot{width:28px;height:5px;border-radius:99px;background:var(--surface3)}
+.dot.active{background:var(--primary)}
+#printArea{display:none}
+@media print{
+  body>*{display:none!important}
+  #printArea{display:block!important;background:#fff;color:#000;padding:12px}
+  #printArea table{min-width:0;width:100%;border-collapse:collapse}
+  #printArea th,#printArea td{border:1px solid #999;padding:6px;font-size:11px;white-space:normal}
+  #printArea h2{font-size:16px}
+}
+@media(max-width:700px){
+  .app{padding:12px 10px 60px}
+  .card{padding:15px;border-radius:12px}
+  h1{font-size:19px}
+  .row>*{flex:1 1 100%}
+  .dict-row{grid-template-columns:1fr 1fr}
+  .btn{flex:1 1 auto}
+  .btn-row .btn{flex:1 1 140px}
+  .toolbar .btn{flex:0 1 auto}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="modalRoot"></div>
+<div class="toast-root" id="toastRoot"></div>
+<div id="printArea"></div>
+<script>
+(function(){
+'use strict';
+
+const SCHEMA_VERSION=1;
+const DB_NAME='expense_tracker_db';
+const DB_VERSION=1;
+const META_KEY='main';
+
+const I18N={
+'zh-CN':{
+ appTitle:'收支记录', startup:'启动确认', datasetName:'数据档名称', lastRecord:'最后记录时间',
+ archiveStatus:'归档状态', open:'开放记录', locked:'锁定归档', periodMode:'记账方式',
+ standard:'标准周期', custom:'自定义周期', trip:'单次出差', year:'年', month:'月',
+ startDate:'起始日', endDate:'结束日', approvalDoc:'出差计划 / 核准文件名',
+ confirmDb:'我已确认记账数据库与方式', quickEntry:'快速记账', menu:'功能分区',
+ addRecord:'新增记账', manageRecords:'管理记账', dataManagement:'数据管理',
+ health:'数据健康度', lastExport:'最后导出时间', never:'从未导出', unexported:'未导出笔数',
+ warningHealth:'建议尽快导出备份', records:'笔', confirm:'确认', cancel:'取消', save:'保存',
+ back:'返回', close:'关闭', yes:'是', no:'否', continue:'继续', edit:'修改', delete:'删除',
+ income:'收入', expense:'支出', purpose:'用途类别', business:'商务', private:'私人', family:'家庭',
+ amount:'金额', currency:'币别', payment:'支付方式', category:'分类标记', reimbursement:'报销标示',
+ reimbursable:'可报销', notReimbursable:'不报销', progress:'报销进度', unsubmitted:'未提交',
+ submitted:'已提交', received:'已到账', brief:'简易记录', note:'复杂叙述', invoice:'对应发票文件',
+ recordTime:'记账时间', editDict:'编辑', add:'新增', rename:'重命名', remove:'删除',
+ unclassified:'未分类', all:'全部', keyword:'关键字', filter:'筛选', allPeriod:'全部周期',
+ currentPeriod:'当前周期', incomeTotal:'收入合计', expenseTotal:'支出合计', net:'净额',
+ softDeleted:'软删除', restore:'恢复', purge:'彻底删除', confirmPurge:'确定彻底删除？不可恢复。',
+ confirmDelete:'确定删除这条记录？', noRecords:'当前周期没有记录', noSoft:'没有软删除记录',
+ exportJson:'导出数据(JSON)', copyJson:'复制JSON', importJson:'导入数据(JSON)', initData:'初始化数据',
+ lock:'锁定归档', unlock:'解锁', pin:'PIN 锁', pinHint:'4–6 位数字，仅防误开',
+ enablePin:'启用 PIN', disablePin:'关闭 PIN', forgotPin:'忘记 PIN', theme:'主题',
+ themeSystem:'跟随系统', themeLight:'浅色', themeDark:'深色', language:'界面语言',
+ exportCsv:'导出 CSV', exportPdf:'导出 PDF', groupByCompany:'按报销公司分组',
+ selectAll:'全选', batchCompany:'批量改报销公司', batchProgress:'批量改进度', batchDelete:'批量软删除',
+ apply:'应用', periodOutside:'切换后，有 {n} 笔记录不在新周期内。记录会保留，但不会显示在管理页。',
+ importPreview:'导入前预览', recordCount:'记录数', dictCount:'字典项数', checksum:'校验和',
+ exportedAt:'导出时间', confirmImport:'确认导入并覆盖', validationFail:'文件校验失败：{msg}',
+ importGuide:'请先将当前数据导出备份，初始化清空后再导入。', duplicateInvoice:'发票文件重名',
+ duplicateInvoiceMsg:'文件“{name}”已被记录“{brief}”使用。仍要保存吗？', saveAnyway:'仍要保存',
+ checkInvoices:'校验发票链接', chooseFolder:'选择发票文件夹', chooseFile:'选择文件',
+ invoiceOk:'发票链接正常', invoiceMissing:'发票链接失效', firstRun:'首次设置',
+ stepLang:'选择语言', stepDataset:'档案设置', stepPeriod:'周期设置', finish:'完成设置',
+ welcome:'欢迎使用。数据只保存在本机，不会上传。', planDocHint:'可选：出差计划或核准文件',
+ lockedNotice:'数据库已锁定，无法执行此操作。', noPermission:'锁定状态下不可修改。',
+ amountInvalid:'金额格式不正确，请输入最多两位小数。', nameRequired:'请填写名称。',
+ confirmInit:'确定初始化？将清空全部记录、字典与设置，回到首次引导。',
+ initReminder:'初始化前请先导出备份。', confirmLock:'确定锁定归档？锁定后不可编辑。',
+ confirmUnlock:'确定解锁？', confirmRestore:'确定恢复这条记录？',
+ confirmBatch:'确定对 {n} 笔记录执行此操作？', importSuccess:'导入完成', exportSuccess:'已导出 JSON',
+ copySuccess:'JSON 已复制到剪贴板', saved:'已保存', deleted:'已删除', restored:'已恢复',
+ purged:'已彻底删除', lockChanged:'归档状态已更新', pinEnabled:'PIN 已启用', pinDisabled:'PIN 已关闭',
+ pinWrong:'PIN 不正确', forgotPinFlow:'忘记 PIN 将导出当前数据、清空本机，然后让你导入备份。继续吗？',
+ softOld:'有 {n} 笔软删除记录超过 30 天，建议彻底删除或导出备份。',
+ dictDeleteRef:'删除后，引用该项的记录会迁移到“未分类”。确定删除吗？',
+ dictSystem:'内置项不可删除', status:'状态', date:'日期', company:'公司', actions:'操作',
+ dataLocal:'数据仅存本机，不上传', swNote:'托管版首次打开后可离线使用',
+ basic:'基本设置', dangerZone:'危险操作', other:'其他', settings:'设置',
+ fiscalYear:'年度', fiscalMonth:'月份', customDay:'每月起始日',
+ tripStart:'出差起始日', tripEnd:'出差结束日', noteOptional:'备注（可选）',
+ recordDetail:'记录详情', copyRecord:'复制为新记录', allRecords:'全部记录',
+ total:'合计', subtotal:'小计', reportTitle:'收支记录报表', filterLabel:'筛选条件',
+ invoiceList:'发票文件', noData:'暂无数据', ok:'正常', missing:'失效', unchecked:'未校验',
+ chooseInvoice:'选择发票', choosePlan:'选择计划文件', folderTip:'可选：先选择发票文件夹以便后续校验',
+ importDisabled:'当前数据库已有数据。请先导出备份并初始化清空，再导入。',
+ previewNote:'确认后将完全覆盖当前空数据库。', emptyDb:'空数据库',
+ fileTooLarge:'文件过大或读取失败', jsonInvalid:'JSON 解析失败'
+},
+'en':{
+ appTitle:'Expense Tracker', startup:'Startup check', datasetName:'Dataset name', lastRecord:'Last record',
+ archiveStatus:'Archive status', open:'Open', locked:'Locked', periodMode:'Accounting period',
+ standard:'Standard month', custom:'Custom cycle', trip:'Single trip', year:'Year', month:'Month',
+ startDate:'Start date', endDate:'End date', approvalDoc:'Trip plan / approval file',
+ confirmDb:'Confirm database and period', quickEntry:'Quick entry', menu:'Functions',
+ addRecord:'Add record', manageRecords:'Manage records', dataManagement:'Data management',
+ health:'Data health', lastExport:'Last export', never:'Never exported', unexported:'Unexported records',
+ warningHealth:'Export a backup soon', records:'records', confirm:'Confirm', cancel:'Cancel', save:'Save',
+ back:'Back', close:'Close', yes:'Yes', no:'No', continue:'Continue', edit:'Edit', delete:'Delete',
+ income:'Income', expense:'Expense', purpose:'Purpose', business:'Business', private:'Private', family:'Family',
+ amount:'Amount', currency:'Currency', payment:'Payment method', category:'Category',
+ reimbursement:'Reimbursement', reimbursable:'Reimbursable', notReimbursable:'Not reimbursable',
+ progress:'Reimbursement status', unsubmitted:'Not submitted', submitted:'Submitted', received:'Received',
+ brief:'Brief note', note:'Detailed note', invoice:'Invoice file', recordTime:'Record time',
+ editDict:'Edit', add:'Add', rename:'Rename', remove:'Delete', unclassified:'Unclassified', all:'All',
+ keyword:'Keyword', filter:'Filter', allPeriod:'All periods', currentPeriod:'Current period',
+ incomeTotal:'Income total', expenseTotal:'Expense total', net:'Net', softDeleted:'Soft deleted',
+ restore:'Restore', purge:'Purge', confirmPurge:'Purge permanently? This cannot be undone.',
+ confirmDelete:'Delete this record?', noRecords:'No records in the current period', noSoft:'No soft-deleted records',
+ exportJson:'Export JSON', copyJson:'Copy JSON', importJson:'Import JSON', initData:'Initialize data',
+ lock:'Lock archive', unlock:'Unlock', pin:'PIN lock', pinHint:'4–6 digits, prevents accidental access only',
+ enablePin:'Enable PIN', disablePin:'Disable PIN', forgotPin:'Forgot PIN', theme:'Theme',
+ themeSystem:'System', themeLight:'Light', themeDark:'Dark', language:'UI language',
+ exportCsv:'Export CSV', exportPdf:'Export PDF', groupByCompany:'Group by company',
+ selectAll:'Select all', batchCompany:'Batch change company', batchProgress:'Batch change status',
+ batchDelete:'Batch soft delete', apply:'Apply', periodOutside:'After switching, {n} records fall outside the new period. They are kept but hidden from the list.',
+ importPreview:'Import preview', recordCount:'Records', dictCount:'Dictionary items', checksum:'Checksum',
+ exportedAt:'Exported at', confirmImport:'Confirm and overwrite', validationFail:'Validation failed: {msg}',
+ importGuide:'Export your current data, initialize to empty, then import again.', duplicateInvoice:'Duplicate invoice',
+ duplicateInvoiceMsg:'File "{name}" is already used by record "{brief}". Save anyway?', saveAnyway:'Save anyway',
+ checkInvoices:'Check invoice links', chooseFolder:'Choose invoice folder', chooseFile:'Choose file',
+ invoiceOk:'Invoice link OK', invoiceMissing:'Invoice link missing', firstRun:'First-time setup',
+ stepLang:'Language', stepDataset:'Dataset', stepPeriod:'Period', finish:'Finish',
+ welcome:'Welcome. Data stays on this device and is never uploaded.', planDocHint:'Optional: trip plan or approval file',
+ lockedNotice:'Database is locked. This action is not allowed.', noPermission:'Cannot modify while locked.',
+ amountInvalid:'Invalid amount. Use up to two decimals.', nameRequired:'Please enter a name.',
+ confirmInit:'Initialize? All records, dictionaries and settings will be cleared.',
+ initReminder:'Export a backup before initialization.', confirmLock:'Lock the archive? Editing will be disabled.',
+ confirmUnlock:'Unlock the database?', confirmRestore:'Restore this record?',
+ confirmBatch:'Apply this action to {n} records?', importSuccess:'Import complete', exportSuccess:'JSON exported',
+ copySuccess:'JSON copied to clipboard', saved:'Saved', deleted:'Deleted', restored:'Restored',
+ purged:'Permanently deleted', lockChanged:'Archive status updated', pinEnabled:'PIN enabled',
+ pinDisabled:'PIN disabled', pinWrong:'Incorrect PIN',
+ forgotPinFlow:'Forgot PIN will export current data, clear local storage, then let you import a backup. Continue?',
+ softOld:'{n} soft-deleted records are over 30 days old. Purge them or export a backup.',
+ dictDeleteRef:'Records referencing this item will move to "Unclassified". Delete anyway?',
+ dictSystem:'Built-in item cannot be deleted', status:'Status', date:'Date', company:'Company', actions:'Actions',
+ dataLocal:'Data stays on this device', swNote:'After first load, the hosted app works offline',
+ basic:'Basic settings', dangerZone:'Danger zone', other:'Other', settings:'Settings',
+ fiscalYear:'Year', fiscalMonth:'Month', customDay:'Start day of month',
+ tripStart:'Trip start', tripEnd:'Trip end', noteOptional:'Note (optional)',
+ recordDetail:'Record details', copyRecord:'Copy as new record', allRecords:'All records',
+ total:'Total', subtotal:'Subtotal', reportTitle:'Expense report', filterLabel:'Filters',
+ invoiceList:'Invoice files', noData:'No data', ok:'OK', missing:'Missing', unchecked:'Unchecked',
+ chooseInvoice:'Choose invoice', choosePlan:'Choose plan file', folderTip:'Optional: choose invoice folder for later checks',
+ importDisabled:'This dataset is not empty. Export and initialize it before importing.',
+ previewNote:'Confirming will fully overwrite the current empty database.', emptyDb:'Empty database',
+ fileTooLarge:'File too large or unreadable', jsonInvalid:'Invalid JSON'
+}
+,'zh-TW':{
+ appTitle:'收支紀錄', startup:'啟動確認', datasetName:'資料檔名稱', lastRecord:'最後紀錄時間',
+ archiveStatus:'歸檔狀態', open:'開放紀錄', locked:'鎖定歸檔', periodMode:'記帳方式',
+ standard:'標準週期', custom:'自訂週期', trip:'單次出差', year:'年', month:'月',
+ startDate:'起始日', endDate:'結束日', approvalDoc:'出差計畫 / 核准檔案',
+ confirmDb:'我已確認記帳資料庫與方式', quickEntry:'快速記帳', menu:'功能分區',
+ addRecord:'新增記帳', manageRecords:'管理記帳', dataManagement:'資料管理',
+ health:'資料健康度', lastExport:'最後匯出時間', never:'從未匯出', unexported:'未匯出筆數',
+ warningHealth:'建議盡快匯出備份', records:'筆', confirm:'確認', cancel:'取消', save:'儲存',
+ back:'返回', close:'關閉', yes:'是', no:'否', continue:'繼續', edit:'修改', delete:'刪除',
+ income:'收入', expense:'支出', purpose:'用途類別', business:'商務', private:'私人', family:'家庭',
+ amount:'金額', currency:'幣別', payment:'支付方式', category:'分類標記', reimbursement:'報銷標示',
+ reimbursable:'可報銷', notReimbursable:'不報銷', progress:'報銷進度', unsubmitted:'未提交',
+ submitted:'已提交', received:'已到帳', brief:'簡易紀錄', note:'複雜敘述', invoice:'對應發票檔案',
+ recordTime:'記帳時間', editDict:'編輯', add:'新增', rename:'重新命名', remove:'刪除',
+ unclassified:'未分類', all:'全部', keyword:'關鍵字', filter:'篩選', allPeriod:'全部週期',
+ currentPeriod:'當前週期', incomeTotal:'收入合計', expenseTotal:'支出合計', net:'淨額',
+ softDeleted:'軟刪除', restore:'還原', purge:'徹底刪除', confirmPurge:'確定徹底刪除？無法復原。',
+ confirmDelete:'確定刪除這筆紀錄？', noRecords:'當前週期沒有紀錄', noSoft:'沒有軟刪除紀錄',
+ exportJson:'匯出資料(JSON)', copyJson:'複製 JSON', importJson:'匯入資料(JSON)', initData:'初始化資料',
+ lock:'鎖定歸檔', unlock:'解鎖', pin:'PIN 鎖', pinHint:'4–6 位數字，僅防誤開',
+ enablePin:'啟用 PIN', disablePin:'關閉 PIN', forgotPin:'忘記 PIN', theme:'主題',
+ themeSystem:'跟隨系統', themeLight:'淺色', themeDark:'深色', language:'介面語言',
+ exportCsv:'匯出 CSV', exportPdf:'匯出 PDF', groupByCompany:'依報銷公司分組',
+ selectAll:'全選', batchCompany:'批次改報銷公司', batchProgress:'批次改進度', batchDelete:'批次軟刪除',
+ apply:'套用', periodOutside:'切換後，有 {n} 筆紀錄不在新週期內。紀錄會保留，但不會顯示在管理頁。',
+ importPreview:'匯入前預覽', recordCount:'紀錄數', dictCount:'字典項目數', checksum:'校驗碼',
+ exportedAt:'匯出時間', confirmImport:'確認匯入並覆蓋', validationFail:'檔案校驗失敗：{msg}',
+ importGuide:'請先將目前資料匯出備份，初始化清空後再匯入。', duplicateInvoice:'發票檔案重名',
+ duplicateInvoiceMsg:'檔案「{name}」已被紀錄「{brief}」使用。仍要儲存嗎？', saveAnyway:'仍要儲存',
+ checkInvoices:'校驗發票連結', chooseFolder:'選擇發票資料夾', chooseFile:'選擇檔案',
+ invoiceOk:'發票連結正常', invoiceMissing:'發票連結失效', firstRun:'首次設定',
+ stepLang:'選擇語言', stepDataset:'檔案設定', stepPeriod:'週期設定', finish:'完成設定',
+ welcome:'歡迎使用。資料只保存在本機，不會上傳。', planDocHint:'可選：出差計畫或核准檔案',
+ lockedNotice:'資料庫已鎖定，無法執行此操作。', noPermission:'鎖定狀態下不可修改。',
+ amountInvalid:'金額格式不正確，請輸入最多兩位小數。', nameRequired:'請填寫名稱。',
+ confirmInit:'確定初始化？將清空全部紀錄、字典與設定，回到首次引導。',
+ initReminder:'初始化前請先匯出備份。', confirmLock:'確定鎖定歸檔？鎖定後不可編輯。',
+ confirmUnlock:'確定解鎖？', confirmRestore:'確定還原這筆紀錄？',
+ confirmBatch:'確定對 {n} 筆紀錄執行此操作？', importSuccess:'匯入完成', exportSuccess:'已匯出 JSON',
+ copySuccess:'JSON 已複製到剪貼簿', saved:'已儲存', deleted:'已刪除', restored:'已還原',
+ purged:'已徹底刪除', lockChanged:'歸檔狀態已更新', pinEnabled:'PIN 已啟用', pinDisabled:'PIN 已關閉',
+ pinWrong:'PIN 不正確', forgotPinFlow:'忘記 PIN 將匯出目前資料、清空本機，然後讓你匯入備份。繼續嗎？',
+ softOld:'有 {n} 筆軟刪除紀錄超過 30 天，建議徹底刪除或匯出備份。',
+ dictDeleteRef:'刪除後，參照該項目的紀錄會遷移到「未分類」。確定刪除嗎？',
+ dictSystem:'內建項目不可刪除', status:'狀態', date:'日期', company:'公司', actions:'操作',
+ dataLocal:'資料僅存本機，不上傳', swNote:'託管版首次開啟後可離線使用',
+ basic:'基本設定', dangerZone:'危險操作', other:'其他', settings:'設定',
+ fiscalYear:'年度', fiscalMonth:'月份', customDay:'每月起始日',
+ tripStart:'出差起始日', tripEnd:'出差結束日', noteOptional:'備註（可選）',
+ recordDetail:'紀錄詳情', copyRecord:'複製為新紀錄', allRecords:'全部紀錄',
+ total:'合計', subtotal:'小計', reportTitle:'收支紀錄報表', filterLabel:'篩選條件',
+ invoiceList:'發票檔案', noData:'暫無資料', ok:'正常', missing:'失效', unchecked:'未校驗',
+ chooseInvoice:'選擇發票', choosePlan:'選擇計畫檔案', folderTip:'可選：先選擇發票資料夾以便後續校驗',
+ importDisabled:'目前資料庫已有資料。請先匯出備份並初始化清空，再匯入。',
+ previewNote:'確認後將完全覆蓋目前的空資料庫。', emptyDb:'空資料庫',
+ fileTooLarge:'檔案過大或讀取失敗', jsonInvalid:'JSON 解析失敗'
+}
+};
+
+let T=I18N['zh-CN'];
+function t(key,params){
+  let s=T[key]||I18N['zh-CN'][key]||key;
+  if(params) Object.keys(params).forEach(k=>{s=s.replace(new RegExp('\\{'+k+'\\}','g'),String(params[k]));});
+  return s;
+}
+function setLang(lang){
+  if(!I18N[lang]) lang='zh-CN';
+  T=I18N[lang];
+  document.documentElement.lang=lang;
+}
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const state={
+  db:null, meta:null, dictionaries:[], records:[],
+  view:'startup', form:null, wizard:null, importCandidate:null,
+  filters:{keyword:'',category:'',currency:'',company:'',progress:'',period:'current'},
+  selected:new Set(), folderManifest:null,
+  dataForm:null, busy:false
+};
+
+function uid(){
+  if(window.crypto&&crypto.randomUUID) return crypto.randomUUID();
+  return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+}
+function fnv1a(str){
+  let h=0x811c9dc5;
+  for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}
+  return h.toString(16).padStart(8,'0');
+}
+function canonical(v){
+  if(Array.isArray(v)) return '['+v.map(canonical).join(',')+']';
+  if(v&&typeof v==='object') return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}';
+  return JSON.stringify(v);
+}
+function localISO(d){
+  const pad=n=>String(n).padStart(2,'0');
+  const off=-d.getTimezoneOffset();
+  const sign=off>=0?'+':'-';
+  const oh=pad(Math.floor(Math.abs(off)/60)), om=pad(Math.abs(off)%60);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00'+sign+oh+':'+om;
+}
+function dateInputValue(d){
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function timeInputValue(d){
+  const pad=n=>String(n).padStart(2,'0');
+  return pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function formatOccurred(iso){
+  if(!iso) return '-';
+  const m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):\d{2}([+-]\d{2}:\d{2})$/);
+  if(m) return m[1]+'/'+m[2]+'/'+m[3]+' '+m[4]+':'+m[5]+' (UTC'+m[6]+')';
+  const d=new Date(iso);
+  if(isNaN(d)) return iso;
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function formatShort(iso){
+  if(!iso) return t('never');
+  const d=new Date(iso); if(isNaN(d)) return iso;
+  const pad=n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'/'+pad(d.getMonth()+1)+'/'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function parseAmount(text){
+  if(text==null||String(text).trim()==='') return null;
+  const s=String(text).trim();
+  if(!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+  const parts=s.split('.');
+  const yuan=Number(parts[0]);
+  const cents=parts[1]?Number(parts[1].padEnd(2,'0')):0;
+  return yuan*100+cents;
+}
+function money(cents){return ((Number(cents)||0)/100).toFixed(2);}
+function daysBetween(iso){
+  if(!iso) return Infinity;
+  return Math.floor((Date.now()-new Date(iso).getTime())/86400000);
+}
+
+function defaultMeta(){
+  const now=new Date();
+  return {key:META_KEY,datasetId:uid(),datasetName:'',createdAt:localISO(now),updatedAt:localISO(now),
+    locked:false,pinEnabled:false,pinSalt:null,pinHash:null,timezone:'device-local',uiLanguage:'zh-CN',
+    theme:'system',lastExportedAt:null,lastExportRecordCount:0,
+    periodMode:'standard',period:{year:now.getFullYear(),month:now.getMonth()+1,customDay:26,startDate:'',endDate:'',planDocName:''}};
+}
+function defaultDictionaries(){
+  const out=[];
+  const add=(type,label,parentId,value,system)=>out.push({id:uid(),type,label,parentId:parentId||null,value:value||label,system:!!system,sortOrder:out.length});
+  ['RMB','EUR','NTD','USD','未分类'].forEach(x=>add('currencies',x,null,x,x==='未分类'));
+  const appId=uid(), cardId=uid(), cashId=uid(), bankId=uid();
+  out.push({id:appId,type:'payments',label:'APP',parentId:null,value:'APP',system:false,sortOrder:out.length});
+  out.push({id:cardId,type:'payments',label:'信用卡',parentId:null,value:'信用卡',system:false,sortOrder:out.length});
+  out.push({id:cashId,type:'payments',label:'现金',parentId:null,value:'现金',system:false,sortOrder:out.length});
+  out.push({id:bankId,type:'payments',label:'转账',parentId:null,value:'转账',system:false,sortOrder:out.length});
+  [['支付宝',appId],['微信',appId],['ApplePay',appId],['云闪付',appId],['VISA1',cardId],['VISA2',cardId],['当地汇兑',cashId],['随身携带',cashId],['Bank1',bankId],['Bank2',bankId]].forEach(x=>add('payments',x[0],x[1],x[0],false));
+  add('payments','未分类',null,'未分类',true);
+  const cats={
+    '交通':['出租车','飞机','地铁','网约车','巴士','火车','轮渡','黑车'],
+    '餐饮':['早餐','午餐','晚餐','宵夜','饮料','酒水','下午茶'],
+    '住宿':['酒店'],
+    '通信':['手机话费','手机流量','漫游流量','网络通信'],
+    '私人':[], '家庭':[], '办公室':[]
+  };
+  Object.keys(cats).forEach(name=>{
+    const id=uid(); out.push({id,type:'categories',label:name,parentId:null,value:name,system:false,sortOrder:out.length});
+    cats[name].forEach(c=>add('categories',c,id,c,false));
+  });
+  add('categories','未分类',null,'未分类',true);
+  const reimbId=uid();
+  out.push({id:reimbId,type:'reimbursements',label:'可报销',parentId:null,value:'yes',system:false,sortOrder:out.length});
+  ['上海公司','德国公司','广州公司','台湾公司'].forEach(x=>add('reimbursements',x,reimbId,x,false));
+  add('reimbursements','不报销',null,'no',false);
+  add('reimbursements','未分类',null,'no',true);
+  [['unsubmitted','未提交'],['submitted','已提交'],['received','已到账'],['unclassified','未分类']].forEach(x=>add('progresses',x[1],null,x[0],x[0]==='unclassified'));
+  return out;
+}
+
+function idbRequest(req){return new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const db=req.result;
+      if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('dictionaries')) {const s=db.createObjectStore('dictionaries',{keyPath:'id'});s.createIndex('type','type',{unique:false});s.createIndex('parentId','parentId',{unique:false});}
+      if(!db.objectStoreNames.contains('records')) {
+        const s=db.createObjectStore('records',{keyPath:'id'});
+        ['occurredAt','currency','categoryL1','reimbursementEntity','reimbursementStatus','deletedAt','updatedAt'].forEach(k=>s.createIndex(k,k,{unique:false}));
+      }
+    };
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function getMeta(){return idbRequest(state.db.transaction('meta','readonly').objectStore('meta').get(META_KEY));}
+function getAll(store){return idbRequest(state.db.transaction(store,'readonly').objectStore(store).getAll());}
+function put(store,value){return idbRequest(state.db.transaction(store,'readwrite').objectStore(store).put(value));}
+function del(store,key){return idbRequest(state.db.transaction(store,'readwrite').objectStore(store).delete(key));}
+function clearStore(store){return idbRequest(state.db.transaction(store,'readwrite').objectStore(store).clear());}
+function putMany(store,values){
+  return new Promise((res,rej)=>{
+    const tx=state.db.transaction(store,'readwrite'); const os=tx.objectStore(store);
+    values.forEach(v=>os.put(v));
+    tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error);
+  });
+}
+async function loadAll(){
+  state.meta=await getMeta();
+  if(!state.meta){state.meta=defaultMeta();await put('meta',state.meta);}
+  if(!state.meta.theme) state.meta.theme='system';
+  if(!state.meta.uiLanguage) state.meta.uiLanguage='zh-CN';
+  state.dictionaries=await getAll('dictionaries');
+  if(!state.dictionaries||!state.dictionaries.length){state.dictionaries=defaultDictionaries();await putMany('dictionaries',state.dictionaries);}
+  state.records=await getAll('records')||[];
+  setLang(state.meta.uiLanguage);
+  applyTheme();
+}
+async function saveMeta(){state.meta.updatedAt=localISO(new Date());await put('meta',state.meta);}
+async function saveRecord(r){await put('records',r);const i=state.records.findIndex(x=>x.id===r.id);if(i>=0)state.records[i]=r;else state.records.push(r);}
+async function saveDicts(){await clearStore('dictionaries');await putMany('dictionaries',state.dictionaries);}
+
+function applyTheme(){
+  const theme=state.meta&&state.meta.theme||'system';
+  const dark=theme==='dark'||(theme==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme=dark?'dark':'light';
+  document.querySelector('meta[name="theme-color"]').setAttribute('content',dark?'#202823':'#7C9A85');
+}
+if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(state.meta&&state.meta.theme==='system')applyTheme();});
+
+function isLocked(){return !!(state.meta&&state.meta.locked);}
+function hasData(){return state.records.length>0||!!(state.meta&&state.meta.datasetName);}
+function activeRecords(){return state.records.filter(r=>!r.deletedAt);}
+function dictItems(type,parentId){
+  return state.dictionaries.filter(d=>d.type===type&&(parentId===undefined||d.parentId===parentId)).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+}
+function dictLabel(id){const d=state.dictionaries.find(x=>x.id===id);return d?d.label:t('unclassified');}
+function dictTypeName(type){
+  if(type==='currencies')return t('currency');
+  if(type==='payments')return t('payment');
+  if(type==='categories')return t('category');
+  if(type==='reimbursements')return t('reimbursement');
+  return t('progress');
+}
+function lastRecordTime(){
+  let last=null; state.records.forEach(r=>{const v=r.updatedAt||r.createdAt;if(v&&(!last||v>last))last=v;});return last;
+}
+function unexportedCount(){
+  const base=state.meta.lastExportedAt||'';
+  return state.records.filter(r=>(r.updatedAt||r.createdAt||'')>base).length;
+}
+function healthWarning(){return unexportedCount()>=20||daysBetween(state.meta.lastExportedAt)>=7;}
+
+function computePeriod(meta){
+  const p=meta.period||{};
+  if(meta.periodMode==='trip'){
+    return {start:p.startDate||'',end:p.endDate||''};
+  }
+  const now=new Date();
+  if(meta.periodMode==='standard'){
+    const y=p.year||now.getFullYear(), m=p.month||now.getMonth()+1;
+    const start=y+'-'+String(m).padStart(2,'0')+'-01';
+    const last=new Date(y,m,0).getDate();
+    return {start,end:y+'-'+String(m).padStart(2,'0')+'-'+String(last).padStart(2,'0')};
+  }
+  let n=Math.min(31,Math.max(1,Number(p.customDay)||26));
+  let sy=now.getFullYear(), sm=now.getMonth()+1;
+  if(now.getDate()<n){sm-=1;if(sm<1){sm=12;sy-=1;}}
+  const start=sy+'-'+String(sm).padStart(2,'0')+'-'+String(n).padStart(2,'0');
+  let ey=sy, em=sm+1; if(em>12){em=1;ey+=1;}
+  let endDay;
+  if(n===1){endDay=new Date(sy,sm,0).getDate();ey=sy;em=sm;}
+  else{const max=new Date(ey,em,0).getDate();endDay=Math.min(n-1,max);}
+  return {start,end:ey+'-'+String(em).padStart(2,'0')+'-'+String(endDay).padStart(2,'0')};
+}
+function currentPeriod(){const p=computePeriod(state.meta);return {start:p.start+'T00:00:00',end:p.end+'T23:59:59'};}
+function inPeriod(r,period){
+  if(!period||!period.start||!period.end) return true;
+  const d=(r.occurredAt||'').slice(0,10);
+  const s=String(period.start).slice(0,10), e=String(period.end).slice(0,10);
+  return d>=s&&d<=e;
+}
+function periodLabel(){
+  const p=computePeriod(state.meta);
+  const mode=t(state.meta.periodMode==='standard'?'standard':state.meta.periodMode==='custom'?'custom':'trip');
+  if(state.meta.periodMode==='standard') return mode+' · '+state.meta.period.year+' '+t('year')+' '+state.meta.period.month+' '+t('month');
+  return mode+' · '+p.start+' → '+p.end;
+}
+
+function render(){
+  const app=document.getElementById('app');
+  if(state.view==='wizard') app.innerHTML=renderWizard();
+  else if(state.view==='startup') app.innerHTML=renderStartup();
+  else if(state.view==='menu') app.innerHTML=renderMenu();
+  else if(state.view==='form') app.innerHTML=renderForm();
+  else if(state.view==='manage') app.innerHTML=renderManage();
+  else if(state.view==='data') app.innerHTML=renderData();
+  else app.innerHTML=renderStartup();
+  app.querySelectorAll('textarea').forEach(autoGrow);
+}
+function header(){
+  return '<div class="row tight" style="justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<div><h1>'+esc(t('appTitle'))+'</h1><div class="sub">'+esc(t('dataLocal'))+' · '+esc(periodLabel())+'</div></div>'+
+    '<span class="chip '+(isLocked()?'warn':'ok')+'">'+esc(isLocked()?t('locked'):t('open'))+'</span></div>';
+}
+function renderWizard(){
+  const w=state.wizard;
+  let stepHtml='';
+  if(w.step===0){
+    stepHtml='<h2>'+esc(t('stepLang'))+'</h2><div class="grid">'+
+      ['zh-CN','zh-TW','en'].map(l=>'<button class="btn '+(w.lang===l?'primary':'')+'" data-action="wizard-lang" data-lang="'+l+'">'+
+      (l==='zh-CN'?'简体中文':l==='zh-TW'?'繁體中文':'English')+'</button>').join('')+'</div>'+
+      '<p class="sub" style="margin-top:14px">'+esc(t('welcome'))+'</p>';
+  }else if(w.step===1){
+    stepHtml='<h2>'+esc(t('stepDataset'))+'</h2>'+
+      '<div class="field"><label>'+esc(t('datasetName'))+'</label><input id="wizName" value="'+esc(w.datasetName)+'" placeholder="'+esc(t('datasetName'))+'"></div>'+
+      '<div class="field"><label>'+esc(t('approvalDoc'))+'</label><div class="inline"><input id="wizPlan" value="'+esc(w.planDocName)+'" readonly><button class="btn small" data-action="pick-plan-wizard">'+esc(t('choosePlan'))+'</button></div><div class="sub">'+esc(t('planDocHint'))+'</div></div>';
+  }else{
+    stepHtml='<h2>'+esc(t('stepPeriod'))+'</h2>'+
+      '<div class="field"><label>'+esc(t('periodMode'))+'</label><select id="wizMode">'+
+      ['standard','custom','trip'].map(m=>'<option value="'+m+'" '+(w.periodMode===m?'selected':'')+'>'+esc(t(m))+'</option>').join('')+'</select></div>'+
+      '<div id="wizPeriodFields">'+wizardPeriodFields(w)+'</div>';
+  }
+  return header()+'<div class="card wide"><div class="wizard-step">'+[0,1,2].map(i=>'<div class="dot '+(i<=w.step?'active':'')+'"></div>').join('')+'</div>'+
+    stepHtml+'<div class="btn-row">'+
+    (w.step>0?'<button class="btn" data-action="wizard-prev">'+esc(t('back'))+'</button>':'')+
+    '<button class="btn" data-action="wizard-import">'+esc(t('importJson'))+'</button>'+
+    '<button class="btn primary" data-action="wizard-next">'+esc(w.step===2?t('finish'):t('continue'))+'</button></div></div>';
+}
+function wizardPeriodFields(w){
+  const now=new Date();
+  if(w.periodMode==='standard') return '<div class="row"><div class="field"><label>'+esc(t('fiscalYear'))+'</label><input id="wizYear" type="number" value="'+(w.year||now.getFullYear())+'"></div><div class="field"><label>'+esc(t('fiscalMonth'))+'</label><input id="wizMonth" type="number" min="1" max="12" value="'+(w.month||now.getMonth()+1)+'"></div></div>';
+  if(w.periodMode==='custom') return '<div class="field"><label>'+esc(t('customDay'))+'</label><input id="wizDay" type="number" min="1" max="31" value="'+(w.customDay||26)+'"></div>';
+  return '<div class="row"><div class="field"><label>'+esc(t('tripStart'))+'</label><input id="wizStart" type="date" value="'+esc(w.startDate||'')+'"></div><div class="field"><label>'+esc(t('tripEnd'))+'</label><input id="wizEnd" type="date" value="'+esc(w.endDate||'')+'"></div></div>';
+}
+function renderStartup(){
+  const p=computePeriod(state.meta);
+  const health=healthWarning();
+  return header()+'<div class="card wide"><h2>'+esc(t('startup'))+'</h2>'+
+    '<div class="info-grid">'+
+    info(t('datasetName'),state.meta.datasetName||t('emptyDb'))+
+    info(t('lastRecord'),formatShort(lastRecordTime()))+
+    info(t('archiveStatus'),isLocked()?t('locked'):t('open'))+
+    info(t('periodMode'),periodLabel())+
+    (state.meta.periodMode==='trip'?info(t('approvalDoc'),state.meta.period.planDocName||'-'):'')+
+    '</div>'+
+    '<div class="chip '+(health?'warn':'ok')+'">'+esc(t('health'))+' · '+esc(t('lastExport'))+': '+esc(formatShort(state.meta.lastExportedAt))+' · '+esc(t('unexported'))+': '+unexportedCount()+' '+esc(t('records'))+'</div>'+
+    (health?'<div class="sub" style="margin-top:8px;color:var(--warn)">'+esc(t('warningHealth'))+'</div>':'')+
+    '<div class="btn-row"><button class="btn primary" data-action="enter-menu">'+esc(t('confirmDb'))+'</button>'+
+    '<button class="btn" data-action="quick-entry">'+esc(t('quickEntry'))+'</button></div></div>';
+}
+function info(k,v){return '<div class="info-item"><div class="k">'+esc(k)+'</div><div class="v">'+esc(v)+'</div></div>';}
+function renderMenu(){
+  return header()+'<div class="card wide"><h2>'+esc(t('menu'))+'</h2><div class="grid">'+
+    '<button class="btn primary" data-action="new-record">'+esc(t('addRecord'))+'</button>'+
+    '<button class="btn" data-action="go-manage">'+esc(t('manageRecords'))+'</button>'+
+    '<button class="btn" data-action="go-data">'+esc(t('dataManagement'))+'</button>'+
+    '</div><div class="btn-row"><button class="btn ghost" data-action="back-startup">'+esc(t('back'))+'</button></div></div>';
+}
+
+function emptyForm(){
+  const now=new Date();
+  return {id:null,type:'expense',purpose:'business',amountText:'',currency:'RMB',
+    paymentL1:'APP',paymentL2:'支付宝',categoryL1:'未分类',categoryL2:'未分类',
+    reimbursementValue:'yes',reimbursementEntity:'上海公司',progress:'unsubmitted',
+    brief:'',note:'',invoice:{name:'',relativePath:'',status:'unchecked',checkedAt:null},
+    occurredDate:dateInputValue(now),occurredTime:timeInputValue(now)};
+}
+function recordToForm(r){
+  return {id:r.id,type:r.type,purpose:r.purpose,amountText:money(r.amountCents),currency:r.currency,
+    paymentL1:r.paymentL1||'',paymentL2:r.paymentL2||'',categoryL1:r.categoryL1||'未分类',categoryL2:r.categoryL2||'未分类',
+    reimbursementValue:r.reimbursable?'yes':'no',reimbursementEntity:r.reimbursementEntity||'未分类',
+    progress:r.reimbursementStatus||'unsubmitted',brief:r.brief||'',note:r.note||'',
+    invoice:r.invoice||{name:'',relativePath:'',status:'unchecked',checkedAt:null},
+    occurredDate:(r.occurredAt||'').slice(0,10),occurredTime:(r.occurredAt||'').slice(11,16)};
+}
+function opts(items,current,emptyLabel){
+  let s=emptyLabel?'<option value="">'+esc(emptyLabel)+'</option>':'';
+  items.forEach(x=>{s+='<option value="'+esc(x.label)+'" '+(current===x.label?'selected':'')+'>'+esc(x.label)+'</option>';});
+  return s;
+}
+function renderForm(){
+  const f=state.form;
+  if(!f) return '';
+  const payL1=dictItems('payments',null).filter(x=>x.label!=='未分类');
+  const payL2=dictItems('payments').filter(x=>x.parentId&&x.parentId===dictItems('payments').find(p=>p.label===f.paymentL1)?.id);
+  const catL1=dictItems('categories',null).filter(x=>x.label!=='未分类');
+  const catL2=dictItems('categories').filter(x=>x.parentId&&x.parentId===dictItems('categories').find(p=>p.label===f.categoryL1)?.id);
+  const reimbL1=dictItems('reimbursements',null);
+  const companies=dictItems('reimbursements').filter(x=>x.parentId);
+  const progresses=dictItems('progresses',null);
+  const invoiceStatus=f.invoice&&f.invoice.name?(f.invoice.status==='missing'?t('missing'):f.invoice.status==='ok'?t('ok'):t('unchecked')):'';
+  return header()+'<div class="card wide"><h2>'+esc(f.id?t('edit'):t('addRecord'))+'</h2>'+
+    '<div class="grid">'+
+    fieldSelect(t('type'),'f-type',['expense','income'].map(x=>({label:t(x)})),f.type==='expense'?t('expense'):t('income'),['expense','income'],'f-type-val')+
+    fieldSelect(t('purpose'),'f-purpose',['business','private','family'].map(x=>({label:t(x)})),t(f.purpose),['business','private','family'],'f-purpose-val')+
+    fieldInput(t('amount'),'f-amount',f.amountText,'0.00')+
+    '<div class="field"><label>'+esc(t('currency'))+'</label><div class="inline"><select id="f-currency">'+opts(dictItems('currencies',null),f.currency)+'</select><button class="btn small" data-action="edit-dict" data-type="currencies">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('payment'))+'</label><div class="inline"><select id="f-pay1">'+opts(payL1,f.paymentL1)+'</select><select id="f-pay2">'+opts(payL2,f.paymentL2)+'</select><button class="btn small" data-action="edit-dict" data-type="payments">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('category'))+'</label><div class="inline"><select id="f-cat1">'+opts(catL1,f.categoryL1)+'</select><select id="f-cat2">'+opts(catL2,f.categoryL2)+'</select><button class="btn small" data-action="edit-dict" data-type="categories">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('reimbursement'))+'</label><div class="inline"><select id="f-reimb">'+reimbL1.map(x=>'<option value="'+esc(x.value)+'" '+(f.reimbursementValue===x.value?'selected':'')+'>'+esc(x.label)+'</option>').join('')+'</select>'+
+      '<select id="f-company" class="'+(f.reimbursementValue==='yes'?'':'hidden')+'">'+opts(companies,f.reimbursementEntity)+'</select>'+
+      '<button class="btn small" data-action="edit-dict" data-type="reimbursements">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('progress'))+'</label><div class="inline"><select id="f-progress">'+progresses.map(x=>'<option value="'+esc(x.value)+'" '+(f.progress===x.value?'selected':'')+'>'+esc(x.label)+'</option>').join('')+'</select><button class="btn small" data-action="edit-dict" data-type="progresses">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('brief'))+'</label><input id="f-brief" value="'+esc(f.brief)+'" maxlength="60"></div>'+
+    '<div class="field"><label>'+esc(t('recordTime'))+'</label><div class="inline"><input id="f-date" type="date" value="'+esc(f.occurredDate)+'"><input id="f-time" type="time" value="'+esc(f.occurredTime)+'"></div></div>'+
+    '</div>'+
+    '<div class="field"><label>'+esc(t('note'))+'</label><textarea id="f-note" maxlength="2000">'+esc(f.note)+'</textarea></div>'+
+    '<div class="field"><label>'+esc(t('invoice'))+'</label><div class="inline"><input id="f-invoice" value="'+esc(f.invoice.name||'')+'" readonly><button class="btn small" data-action="pick-invoice">'+esc(t('chooseInvoice'))+'</button>'+
+      (f.invoice.name?'<span class="chip '+(f.invoice.status==='missing'?'danger':f.invoice.status==='ok'?'ok':'')+'">'+esc(invoiceStatus)+'</span>':'')+'</div></div>'+
+    '<div class="btn-row"><button class="btn primary" data-action="save-record">'+esc(t('save'))+'</button>'+
+    '<button class="btn" data-action="back-menu">'+esc(t('cancel'))+'</button></div></div>';
+}
+function fieldInput(label,id,value,ph){return '<div class="field"><label>'+esc(label)+'</label><input id="'+id+'" value="'+esc(value)+'" placeholder="'+esc(ph||'')+'"></div>';}
+function fieldSelect(label,id,items,display,values,valueId){
+  return '<div class="field"><label>'+esc(label)+'</label><select id="'+id+'">'+items.map((x,i)=>'<option value="'+esc(values[i])+'" '+(display===x.label?'selected':'')+'>'+esc(x.label)+'</option>').join('')+'</select><input type="hidden" id="'+valueId+'" value=""></div>';
+}
+
+function filteredRecords(){
+  const period=state.filters.period==='all'?null:currentPeriod();
+  return activeRecords().filter(r=>{
+    if(!inPeriod(r,period)) return false;
+    const f=state.filters;
+    if(f.category&&r.categoryL1!==f.category) return false;
+    if(f.currency&&r.currency!==f.currency) return false;
+    if(f.company&&r.reimbursementEntity!==f.company) return false;
+    if(f.progress&&r.reimbursementStatus!==f.progress) return false;
+    if(f.keyword){const s=[r.brief,r.note,r.categoryL1,r.categoryL2,r.invoice&&r.invoice.name].join(' ').toLowerCase();if(s.indexOf(f.keyword.toLowerCase())<0)return false;}
+    return true;
+  }).sort((a,b)=>(b.occurredAt||'').localeCompare(a.occurredAt||''));
+}
+function renderManage(){
+  const recs=filteredRecords();
+  const cats=dictItems('categories',null).filter(x=>x.label!=='未分类');
+  const curs=dictItems('currencies',null);
+  const comps=dictItems('reimbursements').filter(x=>x.parentId);
+  const prog=dictItems('progresses',null);
+  const soft=state.records.filter(r=>r.deletedAt);
+  const oldSoft=soft.filter(r=>daysBetween(r.deletedAt)>=30).length;
+  let stats='';
+  const byCurr={};
+  recs.forEach(r=>{const c=r.currency||'-';byCurr[c]=byCurr[c]||{inc:0,exp:0};if(r.type==='income')byCurr[c].inc+=r.amountCents;else byCurr[c].exp+=r.amountCents;});
+  Object.keys(byCurr).forEach(c=>{stats+='<div class="stat"><div class="k">'+esc(c)+' · '+esc(t('incomeTotal'))+'</div><div class="v amount income">'+money(byCurr[c].inc)+'</div>'+
+    '<div class="k">'+esc(t('expenseTotal'))+'</div><div class="v amount expense">'+money(byCurr[c].exp)+'</div>'+
+    '<div class="k">'+esc(t('net'))+'</div><div class="v">'+money(byCurr[c].inc-byCurr[c].exp)+'</div></div>';});
+  const list=recs.map(r=>{
+    const inv=r.invoice&&r.invoice.name?(r.invoice.status==='missing'?'<span class="missing">'+esc(t('invoiceMissing'))+': '+esc(r.invoice.name)+'</span>':esc(r.invoice.name)):'-';
+    return '<div class="list-item"><div class="list-head"><div><label><input type="checkbox" class="row-check" data-id="'+esc(r.id)+'" '+(state.selected.has(r.id)?'checked':'')+'> <span class="list-title">'+esc(r.brief||t('unclassified'))+'</span></label>'+
+      '<div class="list-meta">'+esc(formatOccurred(r.occurredAt))+' · '+esc(r.categoryL1)+' / '+esc(r.categoryL2)+' · '+esc(r.paymentL1)+' / '+esc(r.paymentL2)+' · '+esc(inv)+'</div></div>'+
+      '<div style="text-align:right"><div class="amount '+r.type+'">'+(r.type==='income'?'+':'-')+money(r.amountCents)+' '+esc(r.currency)+'</div>'+
+      '<div class="sub">'+esc(r.reimbursable?t('reimbursable')+' · '+esc(r.reimbursementEntity):t('notReimbursable'))+' · '+esc(progressLabel(r.reimbursementStatus))+'</div></div></div>'+
+      '<div class="btn-row"><button class="btn small" data-action="edit-record" data-id="'+esc(r.id)+'">'+esc(t('edit'))+'</button>'+
+      '<button class="btn small" data-action="copy-record" data-id="'+esc(r.id)+'">'+esc(t('copyRecord'))+'</button>'+
+      '<button class="btn small danger" data-action="delete-record" data-id="'+esc(r.id)+'">'+esc(t('delete'))+'</button></div></div>';
+  }).join('')||'<div class="sub">'+esc(t('noRecords'))+'</div>';
+  return header()+'<div class="card wide"><h2>'+esc(t('manageRecords'))+'</h2>'+
+    '<div class="row"><div class="field"><label>'+esc(t('keyword'))+'</label><input id="flt-keyword" value="'+esc(state.filters.keyword)+'"></div>'+
+    '<div class="field"><label>'+esc(t('category'))+'</label><select id="flt-category"><option value="">'+esc(t('all'))+'</option>'+opts(cats,'')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('currency'))+'</label><select id="flt-currency"><option value="">'+esc(t('all'))+'</option>'+opts(curs,'')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('company'))+'</label><select id="flt-company"><option value="">'+esc(t('all'))+'</option>'+opts(comps,'')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('progress'))+'</label><select id="flt-progress"><option value="">'+esc(t('all'))+'</option>'+prog.map(x=>'<option value="'+esc(x.value)+'">'+esc(x.label)+'</option>').join('')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('periodMode'))+'</label><select id="flt-period"><option value="current" '+(state.filters.period==='current'?'selected':'')+'>'+esc(t('currentPeriod'))+'</option><option value="all" '+(state.filters.period==='all'?'selected':'')+'>'+esc(t('allPeriod'))+'</option></select></div></div>'+
+    '<div class="btn-row"><button class="btn small" data-action="apply-filter">'+esc(t('filter'))+'</button>'+
+    '<button class="btn small" data-action="check-invoices">'+esc(t('checkInvoices'))+'</button>'+
+    '<button class="btn small" data-action="export-csv">'+esc(t('exportCsv'))+'</button>'+
+    '<button class="btn small" data-action="export-pdf">'+esc(t('exportPdf'))+'</button>'+
+    '<label class="chip"><input type="checkbox" id="group-company"> '+esc(t('groupByCompany'))+'</label></div>'+
+    '<div class="toolbar"><button class="btn small" data-action="select-all">'+esc(t('selectAll'))+'</button>'+
+    '<button class="btn small" data-action="batch-company">'+esc(t('batchCompany'))+'</button>'+
+    '<button class="btn small" data-action="batch-progress">'+esc(t('batchProgress'))+'</button>'+
+    '<button class="btn small danger" data-action="batch-delete">'+esc(t('batchDelete'))+'</button>'+
+    '<span class="sub">'+state.selected.size+' '+esc(t('records'))+'</span></div>'+
+    '<div class="list">'+list+'</div>'+
+    '<div class="stat-grid">'+(stats||'<div class="sub">'+esc(t('noData'))+'</div>')+'</div>'+
+    '<div class="sep"></div><h3>'+esc(t('softDeleted'))+'</h3>'+
+    (oldSoft?'<div class="chip warn">'+esc(t('softOld',{n:oldSoft}))+'</div>':'')+
+    (soft.map(r=>'<div class="list-item"><div class="list-head"><div><div class="list-title">'+esc(r.brief||t('unclassified'))+'</div><div class="list-meta">'+esc(formatShort(r.deletedAt))+'</div></div>'+
+      '<div class="btn-row"><button class="btn small" data-action="restore-record" data-id="'+esc(r.id)+'">'+esc(t('restore'))+'</button>'+
+      '<button class="btn small danger" data-action="purge-record" data-id="'+esc(r.id)+'">'+esc(t('purge'))+'</button></div></div></div>').join('')||'<div class="sub">'+esc(t('noSoft'))+'</div>')+
+    '<div class="btn-row"><button class="btn ghost" data-action="back-menu">'+esc(t('back'))+'</button></div></div>';
+}
+function progressLabel(v){const d=state.dictionaries.find(x=>x.type==='progresses'&&x.value===v);return d?d.label:t('unclassified');}
+
+function renderData(){
+  const p=computePeriod(state.meta), m=state.meta;
+  const per=m.period||{};
+  const cnt=unexportedCount();
+  return header()+'<div class="card wide"><h2>'+esc(t('dataManagement'))+'</h2>'+
+    '<div class="info-grid">'+info(t('datasetName'),m.datasetName||'-')+info(t('periodMode'),periodLabel())+info(t('lastExport'),formatShort(m.lastExportedAt))+info(t('unexported'),cnt+' '+t('records'))+'</div>'+
+    '<h3>'+esc(t('basic'))+'</h3><div class="row">'+
+    '<div class="field"><label>'+esc(t('datasetName'))+'</label><input id="d-name" value="'+esc(m.datasetName)+'"></div>'+
+    '<div class="field"><label>'+esc(t('approvalDoc'))+'</label><div class="inline"><input id="d-plan" value="'+esc(per.planDocName||'')+'" readonly><button class="btn small" data-action="pick-plan-data">'+esc(t('choosePlan'))+'</button></div></div></div>'+
+    '<div class="row">'+
+    '<div class="field"><label>'+esc(t('periodMode'))+'</label><select id="d-mode">'+['standard','custom','trip'].map(x=>'<option value="'+x+'" '+(m.periodMode===x?'selected':'')+'>'+esc(t(x))+'</option>').join('')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('fiscalYear'))+'</label><input id="d-year" type="number" value="'+(per.year||new Date().getFullYear())+'"></div>'+
+    '<div class="field"><label>'+esc(t('fiscalMonth'))+'</label><input id="d-month" type="number" min="1" max="12" value="'+(per.month||new Date().getMonth()+1)+'"></div>'+
+    '<div class="field"><label>'+esc(t('customDay'))+'</label><input id="d-day" type="number" min="1" max="31" value="'+(per.customDay||26)+'"></div>'+
+    '<div class="field"><label>'+esc(t('tripStart'))+'</label><input id="d-start" type="date" value="'+esc(per.startDate||'')+'"></div>'+
+    '<div class="field"><label>'+esc(t('tripEnd'))+'</label><input id="d-end" type="date" value="'+esc(per.endDate||'')+'"></div></div>'+
+    '<div class="btn-row"><button class="btn primary small" data-action="save-settings">'+esc(t('save'))+'</button></div>'+
+    '<div class="sep"></div><h3>'+esc(t('settings'))+'</h3><div class="row">'+
+    '<div class="field"><label>'+esc(t('language'))+'</label><select id="d-lang">'+['zh-CN','zh-TW','en'].map(l=>'<option value="'+l+'" '+(m.uiLanguage===l?'selected':'')+'>'+(l==='zh-CN'?'简体中文':l==='zh-TW'?'繁體中文':'English')+'</option>').join('')+'</select></div>'+
+    '<div class="field"><label>'+esc(t('theme'))+'</label><select id="d-theme">'+['system','light','dark'].map(x=>'<option value="'+x+'" '+(m.theme===x?'selected':'')+'>'+esc(t('theme'+x.charAt(0).toUpperCase()+x.slice(1)))+'</option>').join('')+'</select></div></div>'+
+    '<div class="btn-row"><button class="btn small" data-action="save-prefs">'+esc(t('save'))+'</button>'+
+    '<button class="btn small '+(m.locked?'':'primary')+'" data-action="toggle-lock">'+esc(m.locked?t('unlock'):t('lock'))+'</button>'+
+    '<button class="btn small" data-action="toggle-pin">'+esc(m.pinEnabled?t('disablePin'):t('enablePin'))+'</button>'+
+    (m.pinEnabled?'<button class="btn small danger" data-action="forgot-pin">'+esc(t('forgotPin'))+'</button>':'')+'</div>'+
+    '<div class="sep"></div><h3>'+esc(t('other'))+'</h3><div class="btn-row">'+
+    '<button class="btn small" data-action="export-json">'+esc(t('exportJson'))+'</button>'+
+    '<button class="btn small" data-action="copy-json">'+esc(t('copyJson'))+'</button>'+
+    '<button class="btn small" data-action="import-json" '+(hasData()?'disabled title="'+esc(t('importDisabled'))+'"':'')+'>'+esc(t('importJson'))+'</button>'+
+    '<button class="btn small" data-action="choose-folder">'+esc(t('chooseFolder'))+'</button></div>'+
+    '<div class="sub" style="margin-top:8px">'+esc(t('folderTip'))+' · '+esc(t('swNote'))+'</div>'+
+    '<div class="sep"></div><h3>'+esc(t('dangerZone'))+'</h3>'+
+    '<button class="btn danger small" data-action="initialize">'+esc(t('initData'))+'</button>'+
+    '<div class="btn-row"><button class="btn ghost" data-action="back-menu">'+esc(t('back'))+'</button></div></div>';
+}
+
+function modal(html,small){document.getElementById('modalRoot').innerHTML='<div class="modal-mask" data-action="modal-mask"><div class="modal '+(small?'small':'')+'" data-modal-box>'+html+'</div></div>';}
+function closeModal(){document.getElementById('modalRoot').innerHTML='';}
+function toast(msg,type){
+  const el=document.createElement('div');el.className='toast '+(type||'');el.textContent=msg;
+  document.getElementById('toastRoot').appendChild(el);
+  setTimeout(()=>el.remove(),2600);
+}
+function confirmBox(msg,onYes,danger){
+  modal('<h2>'+esc(t('confirm'))+'</h2><p>'+esc(msg)+'</p><div class="btn-row"><button class="btn '+(danger?'danger':'primary')+'" data-action="confirm-yes">'+esc(t('confirm'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);
+  state.confirmCallback=onYes;
+}
+function promptBox(title,value,onOk,type){
+  modal('<h2>'+esc(title)+'</h2><div class="field"><input id="promptInput" type="'+(type||'text')+'" value="'+esc(value||'')+'"></div><div class="btn-row"><button class="btn primary" data-action="prompt-ok">'+esc(t('confirm'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);
+  state.promptCallback=onOk;
+  setTimeout(()=>document.getElementById('promptInput')?.focus(),30);
+}
+function pinBox(onOk){
+  modal('<h2>'+esc(t('pin'))+'</h2><div class="sub">'+esc(t('pinHint'))+'</div><div class="field"><input id="pinInput" type="password" inputmode="numeric" maxlength="6"></div><div class="btn-row"><button class="btn primary" data-action="pin-ok">'+esc(t('confirm'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);
+  state.pinCallback=onOk;
+  setTimeout(()=>document.getElementById('pinInput')?.focus(),30);
+}
+function checkPin(pin){return fnv1a((state.meta.pinSalt||'')+pin)===state.meta.pinHash;}
+
+function buildOccurredAt(f){
+  const date=f.occurredDate||dateInputValue(new Date());
+  const time=f.occurredTime||'00:00';
+  const d=new Date(date+'T'+time+':00');
+  return isNaN(d)?localISO(new Date()):localISO(d);
+}
+function guard(){if(isLocked()){toast(t('lockedNotice'),'danger');return false;}return true;}
+
+async function saveFormRecord(force){
+  if(!guard())return;
+  const f=state.form; if(!f)return;
+  const cents=parseAmount(f.amountText);
+  if(cents==null){toast(t('amountInvalid'),'danger');return;}
+  if(f.reimbursementValue==='yes'&&!f.reimbursementEntity){toast(t('nameRequired'),'danger');return;}
+  if(!force&&f.invoice&&f.invoice.name){
+    const dup=activeRecords().find(r=>r.id!==f.id&&r.invoice&&r.invoice.name&&r.invoice.name.toLowerCase()===f.invoice.name.toLowerCase());
+    if(dup){
+      modal('<h2>'+esc(t('duplicateInvoice'))+'</h2><p>'+esc(t('duplicateInvoiceMsg',{name:f.invoice.name,brief:dup.brief||t('unclassified')}))+'</p><div class="btn-row"><button class="btn primary" data-action="save-anyway">'+esc(t('saveAnyway'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);
+      return;
+    }
+  }
+  const now=localISO(new Date());
+  const r={
+    id:f.id||uid(),createdAt:f.id?(state.records.find(x=>x.id===f.id)||{}).createdAt||now:now,
+    updatedAt:now,deletedAt:null,deviceId:(state.meta&&state.meta.datasetId)||uid(),
+    type:f.type,purpose:f.purpose,amountCents:cents,currency:f.currency,
+    paymentL1:f.paymentL1,paymentL2:f.paymentL2,categoryL1:f.categoryL1,categoryL2:f.categoryL2,
+    reimbursable:f.reimbursementValue==='yes',reimbursementEntity:f.reimbursementValue==='yes'?f.reimbursementEntity:'未分类',
+    reimbursementStatus:f.reimbursementValue==='yes'?f.progress:'unsubmitted',
+    reimbursementStatusDate:null,brief:f.brief,note:f.note,
+    invoice:f.invoice||{name:'',relativePath:'',status:'unchecked',checkedAt:null},
+    occurredAt:buildOccurredAt(f)
+  };
+  await saveRecord(r);
+  closeModal(); state.form=null; state.view='manage'; render(); toast(t('saved'),'ok');
+}
+
+function jsonPayload(updateExport){
+  if(updateExport){state.meta.lastExportedAt=localISO(new Date());state.meta.lastExportRecordCount=activeRecords().length;}
+  const payload={schemaVersion:SCHEMA_VERSION,exportedAt:localISO(new Date()),meta:state.meta,dictionaries:state.dictionaries,records:state.records};
+  payload.checksum={algorithm:'fnv1a',recordCount:state.records.length,value:fnv1a(canonical(payload))};
+  return payload;
+}
+function downloadText(text,name,mime){
+  const blob=new Blob([text],{type:mime||'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function exportJSON(){
+  const payload=jsonPayload(true); await saveMeta();
+  const name=(state.meta.datasetName||'dataset').replace(/[\\/:*?"<>|]/g,'_')+'_'+dateInputValue(new Date()).replace(/-/g,'')+'.json';
+  downloadText(JSON.stringify(payload,null,2),name);
+  toast(t('exportSuccess'),'ok'); render();
+}
+async function copyJSON(){
+  const payload=jsonPayload(false); const text=JSON.stringify(payload,null,2);
+  try{await navigator.clipboard.writeText(text);toast(t('copySuccess'),'ok');}
+  catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast(t('copySuccess'),'ok');}
+}
+function validatePayload(obj){
+  if(!obj||obj.schemaVersion!==SCHEMA_VERSION) return 'schemaVersion';
+  if(!Array.isArray(obj.records)||!Array.isArray(obj.dictionaries)||!obj.meta) return 'structure';
+  const check=obj.checksum;
+  if(!check||check.algorithm!=='fnv1a') return 'checksum';
+  const raw={schemaVersion:obj.schemaVersion,exportedAt:obj.exportedAt,meta:obj.meta,dictionaries:obj.dictionaries,records:obj.records};
+  if(fnv1a(canonical(raw))!==check.value) return 'checksum';
+  return null;
+}
+function importPreview(){
+  const o=state.importCandidate; if(!o)return;
+  const p=computePeriod(o.meta);
+  modal('<h2>'+esc(t('importPreview'))+'</h2><div class="info-grid">'+
+    info(t('datasetName'),o.meta.datasetName||'-')+info(t('periodMode'),o.meta.periodMode||'-')+
+    info(t('startDate'),p.start||'-')+info(t('endDate'),p.end||'-')+
+    info(t('lastExport'),formatShort(o.exportedAt))+info(t('language'),o.meta.uiLanguage||'-')+
+    info(t('recordCount'),String(o.records.length))+info(t('dictCount'),String(o.dictionaries.length))+
+    info(t('archiveStatus'),o.meta.locked?t('locked'):t('open'))+info(t('pin'),o.meta.pinEnabled?t('enablePin'):t('pinDisabled'))+
+    info(t('checksum'),o.checksum&&o.checksum.value||'-')+
+    '</div><p class="sub">'+esc(t('previewNote'))+'</p><div class="btn-row"><button class="btn primary" data-action="confirm-import">'+esc(t('confirmImport'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>');
+}
+async function doImport(){
+  const o=state.importCandidate; if(!o)return;
+  await clearStore('meta');await clearStore('dictionaries');await clearStore('records');
+  await put('meta',o.meta);await putMany('dictionaries',o.dictionaries);await putMany('records',o.records);
+  state.meta=o.meta;state.dictionaries=o.dictionaries;state.records=o.records;
+  setLang(state.meta.uiLanguage||'zh-CN');applyTheme();
+  state.importCandidate=null;state.view='startup';closeModal();render();toast(t('importSuccess'),'ok');
+}
+async function initializeData(){
+  await clearStore('meta');await clearStore('dictionaries');await clearStore('records');
+  state.meta=defaultMeta();state.dictionaries=defaultDictionaries();state.records=[];
+  await put('meta',state.meta);await putMany('dictionaries',state.dictionaries);
+  state.wizard={step:0,lang:state.meta.uiLanguage,datasetName:'',planDocName:'',periodMode:'standard',year:state.meta.period.year,month:state.meta.period.month,customDay:26,startDate:'',endDate:''};
+  state.view='wizard';closeModal();render();
+}
+function supportsFolderPicker(){return 'webkitdirectory' in document.createElement('input');}
+function pickFile(accept,cb,multiple,folder){
+  const input=document.createElement('input');input.type='file';input.accept=accept;if(multiple)input.multiple=true;if(folder&&supportsFolderPicker())input.webkitdirectory=true;
+  input.style.display='none';document.body.appendChild(input);
+  input.onchange=()=>{const files=Array.from(input.files||[]);input.remove();if(files.length)cb(files);};
+  input.click();
+}
+function csvEscape(v){const s=String(v==null?'':v);return '"'+s.replace(/"/g,'""')+'"';}
+function exportCSV(){
+  const recs=state.exportScope==='all'?activeRecords():filteredRecords();
+  const head=[t('date'),t('type'),t('purpose'),t('amount'),t('currency'),t('payment'),t('category'),t('reimbursement'),t('company'),t('progress'),t('brief'),t('note'),t('invoice')];
+  const lines=[head.map(csvEscape).join(',')];
+  recs.forEach(r=>lines.push([formatOccurred(r.occurredAt),t(r.type),t(r.purpose),money(r.amountCents),r.currency,r.paymentL1+'/'+r.paymentL2,r.categoryL1+'/'+r.categoryL2,r.reimbursable?t('reimbursable'):t('notReimbursable'),r.reimbursementEntity,progressLabel(r.reimbursementStatus),r.brief,r.note,r.invoice&&r.invoice.name].map(csvEscape).join(',')));
+  downloadText('\ufeff'+lines.join('\r\n'),(state.meta.datasetName||'records')+'_'+dateInputValue(new Date()).replace(/-/g,'')+'.csv','text/csv;charset=utf-8');
+}
+function exportPDF(){
+  const recs=state.exportScope==='all'?activeRecords():filteredRecords();
+  const group=!!state.groupByCompany;
+  let html='<h2>'+esc(t('reportTitle'))+'</h2><p class="sub">'+esc(state.meta.datasetName)+' · '+esc(periodLabel())+' · '+esc(t('filterLabel'))+': '+esc(state.filters.keyword||t('all'))+'</p>';
+  const renderRows=list=>{
+    let h='<table><thead><tr><th>'+esc(t('date'))+'</th><th>'+esc(t('type'))+'</th><th>'+esc(t('amount'))+'</th><th>'+esc(t('currency'))+'</th><th>'+esc(t('category'))+'</th><th>'+esc(t('company'))+'</th><th>'+esc(t('progress'))+'</th><th>'+esc(t('invoice'))+'</th></tr></thead><tbody>';
+    list.forEach(r=>{h+='<tr><td>'+esc(formatShort(r.occurredAt))+'</td><td>'+esc(t(r.type))+'</td><td>'+money(r.amountCents)+'</td><td>'+esc(r.currency)+'</td><td>'+esc(r.categoryL1+'/'+r.categoryL2)+'</td><td>'+esc(r.reimbursable?r.reimbursementEntity:t('notReimbursable'))+'</td><td>'+esc(progressLabel(r.reimbursementStatus))+'</td><td>'+esc(r.invoice&&r.invoice.name||'')+'</td></tr>';});
+    return h+'</tbody></table>';
+  };
+  if(group){
+    const groups={};recs.filter(r=>r.reimbursable).forEach(r=>{(groups[r.reimbursementEntity]=groups[r.reimbursementEntity]||[]).push(r);});
+    Object.keys(groups).forEach(c=>{const by={};groups[c].forEach(r=>{by[r.currency]=by[r.currency]||{i:0,e:0};if(r.type==='income')by[r.currency].i+=r.amountCents;else by[r.currency].e+=r.amountCents;});
+      html+='<h3>'+esc(t('company'))+': '+esc(c)+' · '+esc(t('subtotal'))+'</h3>'+renderRows(groups[c])+'<p>'+Object.keys(by).map(k=>esc(k)+' '+t('incomeTotal')+' '+money(by[k].i)+' / '+t('expenseTotal')+' '+money(by[k].e)).join(' · ')+'</p>';});
+  }else html+=renderRows(recs);
+  document.getElementById('printArea').innerHTML=html;
+  window.print();
+}
+async function checkInvoices(){
+  pickFile('',files=>{
+    const set=new Set(files.map(f=>(f.webkitRelativePath||f.name).toLowerCase()));
+    state.folderManifest=set;
+    state.records.forEach(r=>{if(r.invoice&&r.invoice.name){const key=(r.invoice.relativePath||r.invoice.name).toLowerCase();const ok=set.has(key)||set.has(r.invoice.name.toLowerCase());r.invoice.status=ok?'ok':'missing';r.invoice.checkedAt=localISO(new Date());r.updatedAt=localISO(new Date());}});
+    putMany('records',state.records).then(()=>{render();toast(t('checkInvoices'),'ok');});
+  },true,true);
+}
+
+function dictModal(type){
+  const items=state.dictionaries.filter(d=>d.type===type).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  const parents=items.filter(x=>!x.parentId);
+  modal('<h2>'+esc(t('editDict'))+' · '+esc(dictTypeName(type))+'</h2><div id="dictList">'+
+    items.map(d=>{
+      const parent=d.parentId?dictLabel(d.parentId):'-';
+      const canDel=!d.system;
+      return '<div class="dict-row"><input id="dn-'+d.id+'" value="'+esc(d.label)+'"><span class="sub">'+esc(parent)+'</span>'+
+        '<button class="btn small" data-action="dict-rename" data-id="'+d.id+'" data-type="'+type+'">'+esc(t('save'))+'</button>'+
+        '<button class="btn small danger" data-action="dict-delete" data-id="'+d.id+'" data-type="'+type+'" '+(canDel?'':'disabled')+'>'+esc(t('remove'))+'</button></div>';
+    }).join('')+'</div><div class="sep"></div><h3>'+esc(t('add'))+'</h3>'+
+    '<div class="row"><div class="field"><label>'+esc(t('name'))+'</label><input id="dictNewName"></div>'+
+    (type==='payments'||type==='categories'||type==='reimbursements'?'<div class="field"><label>'+esc(t('category'))+'</label><select id="dictNewParent"><option value="">'+t('all')+'</option>'+parents.map(p=>'<option value="'+p.id+'">'+esc(p.label)+'</option>').join('')+'</select></div>':'')+'</div>'+
+    '<div class="btn-row"><button class="btn primary" data-action="dict-add" data-type="'+type+'">'+esc(t('add'))+'</button><button class="btn" data-action="modal-close">'+esc(t('close'))+'</button></div>');
+}
+function migrateDict(type,item){
+  state.records.forEach(r=>{
+    if(type==='currencies'&&r.currency===item.label)r.currency='未分类';
+    if(type==='payments'&&(r.paymentL1===item.label||r.paymentL2===item.label)){if(r.paymentL1===item.label)r.paymentL1='未分类';if(r.paymentL2===item.label)r.paymentL2='未分类';}
+    if(type==='categories'&&(r.categoryL1===item.label||r.categoryL2===item.label)){if(r.categoryL1===item.label)r.categoryL1='未分类';if(r.categoryL2===item.label)r.categoryL2='未分类';}
+    if(type==='reimbursements'&&(r.reimbursementEntity===item.label||(item.value==='yes'&&r.reimbursable))){if(r.reimbursementEntity===item.label)r.reimbursementEntity='未分类';if(item.value==='yes'){r.reimbursable=false;r.reimbursementStatus='unsubmitted';}}
+    if(type==='progresses'&&r.reimbursementStatus===item.value)r.reimbursementStatus='unsubmitted';
+    r.updatedAt=localISO(new Date());
+  });
+}
+async function deleteDict(type,id){
+  const item=state.dictionaries.find(x=>x.id===id);if(!item)return;
+  if(item.system){toast(t('dictSystem'),'danger');return;}
+  confirmBox(t('dictDeleteRef'),async()=>{
+    const kids=state.dictionaries.filter(x=>x.parentId===id);
+    kids.forEach(k=>migrateDict(type,k));
+    migrateDict(type,item);
+    state.dictionaries=state.dictionaries.filter(x=>x.id!==id&&x.parentId!==id);
+    await saveDicts();await putMany('records',state.records);closeModal();render();toast(t('deleted'),'ok');
+  },true);
+}
+
+async function handleAction(action,el){
+  const id=el&&el.dataset?el.dataset.id:null;
+  if(action==='modal-close'||action==='modal-mask'){if(action==='modal-mask'&&el.classList.contains('modal-mask')&&event.target!==el)return;closeModal();return;}
+  if(action==='confirm-yes'){const cb=state.confirmCallback;state.confirmCallback=null;closeModal();if(cb)await cb();return;}
+  if(action==='prompt-ok'){const v=document.getElementById('promptInput').value;const cb=state.promptCallback;state.promptCallback=null;closeModal();if(cb)await cb(v);return;}
+  if(action==='pin-ok'){const v=document.getElementById('pinInput').value;const cb=state.pinCallback;state.pinCallback=null;closeModal();if(cb)await cb(v);return;}
+  if(action==='wizard-lang'){state.wizard.lang=el.dataset.lang;setLang(el.dataset.lang);state.meta.uiLanguage=el.dataset.lang;await saveMeta();render();return;}
+  if(action==='wizard-prev'){state.wizard.step=Math.max(0,state.wizard.step-1);syncWizardInputs();render();return;}
+  if(action==='wizard-next'){
+    syncWizardInputs();const w=state.wizard;
+    if(w.step===0){w.step=1;}
+    else if(w.step===1){if(!w.datasetName){toast(t('nameRequired'),'danger');return;}w.step=2;}
+    else{
+      if(w.periodMode==='trip'&&(!w.startDate||!w.endDate)){toast(t('nameRequired'),'danger');return;}
+      state.meta.datasetName=w.datasetName;state.meta.uiLanguage=w.lang;state.meta.periodMode=w.periodMode;
+      state.meta.period={year:w.year,month:w.month,customDay:w.customDay,startDate:w.startDate,endDate:w.endDate,planDocName:w.planDocName};
+      const p=computePeriod(state.meta);state.meta.period.startDate=p.start;state.meta.period.endDate=p.end;
+      if(w.periodMode==='trip'){state.meta.period.startDate=w.startDate;state.meta.period.endDate=w.endDate;}
+      await saveMeta();state.wizard=null;state.view='startup';render();return;
+    }
+    render();return;
+  }
+  if(action==='wizard-import'){pickFile('.json,application/json',files=>readImportFile(files[0]));return;}
+  if(action==='pick-plan-wizard'||action==='pick-plan-data'){pickFile('.pdf,.xls,.xlsx,.doc,.docx',files=>{
+    const name=files[0].name;
+    if(state.view==='wizard'){state.wizard.planDocName=name;render();}
+    else{document.getElementById('d-plan').value=name;}
+  });return;}
+  if(action==='enter-menu'){state.view='menu';render();return;}
+  if(action==='back-startup'){state.view='startup';render();return;}
+  if(action==='back-menu'){state.view='menu';state.form=null;render();return;}
+  if(action==='quick-entry'){if(!guard())return;state.form=emptyForm();state.view='form';render();return;}
+  if(action==='new-record'){if(!guard())return;state.form=emptyForm();state.view='form';render();return;}
+  if(action==='go-manage'){state.view='manage';render();return;}
+  if(action==='go-data'){state.view='data';render();return;}
+  if(action==='edit-record'){if(!guard())return;const r=state.records.find(x=>x.id===id);if(r){state.form=recordToForm(r);state.view='form';render();}return;}
+  if(action==='copy-record'){if(!guard())return;const r=state.records.find(x=>x.id===id);if(r){const f=recordToForm(r);f.id=null;f.occurredDate=dateInputValue(new Date());f.occurredTime=timeInputValue(new Date());f.invoice={name:'',relativePath:'',status:'unchecked',checkedAt:null};f.progress='unsubmitted';state.form=f;state.view='form';render();}return;}
+  if(action==='delete-record'){if(!guard())return;confirmBox(t('confirmDelete'),async()=>{const r=state.records.find(x=>x.id===id);if(r){r.deletedAt=localISO(new Date());r.updatedAt=r.deletedAt;await saveRecord(r);}render();toast(t('deleted'),'ok');},true);return;}
+  if(action==='restore-record'){if(!guard())return;confirmBox(t('confirmRestore'),async()=>{const r=state.records.find(x=>x.id===id);if(r){r.deletedAt=null;r.updatedAt=localISO(new Date());await saveRecord(r);}render();toast(t('restored'),'ok');});return;}
+  if(action==='purge-record'){if(!guard())return;confirmBox(t('confirmPurge'),async()=>{await del('records',id);state.records=state.records.filter(x=>x.id!==id);render();toast(t('purged'),'ok');},true);return;}
+  if(action==='save-record'){await saveFormRecord(false);return;}
+  if(action==='save-anyway'){await saveFormRecord(true);return;}
+  if(action==='pick-invoice'){pickFile('.pdf,.jpg,.jpeg,.png,.bmp',files=>{
+    const f=files[0];state.form.invoice={name:f.name,relativePath:f.webkitRelativePath||f.name,status:'unchecked',checkedAt:null};render();
+  });return;}
+  if(action==='edit-dict'){dictModal(el.dataset.type);return;}
+  if(action==='dict-add'){
+    const type=el.dataset.type;const name=document.getElementById('dictNewName').value.trim();if(!name){toast(t('nameRequired'),'danger');return;}
+    const parentSel=document.getElementById('dictNewParent');const parentId=parentSel?parentSel.value||null:null;
+    state.dictionaries.push({id:uid(),type,label:name,parentId,value:name,system:false,sortOrder:state.dictionaries.length});
+    await saveDicts();dictModal(type);toast(t('saved'),'ok');return;
+  }
+  if(action==='dict-rename'){
+    const item=state.dictionaries.find(x=>x.id===id);if(!item)return;const name=document.getElementById('dn-'+id).value.trim();if(!name){toast(t('nameRequired'),'danger');return;}
+    item.label=name;if(!item.system)item.value=name;await saveDicts();dictModal(item.type);toast(t('saved'),'ok');return;
+  }
+  if(action==='dict-delete'){await deleteDict(el.dataset.type,id);return;}
+  if(action==='apply-filter'){
+    state.filters.keyword=document.getElementById('flt-keyword').value.trim();
+    state.filters.category=document.getElementById('flt-category').value;
+    state.filters.currency=document.getElementById('flt-currency').value;
+    state.filters.company=document.getElementById('flt-company').value;
+    state.filters.progress=document.getElementById('flt-progress').value;
+    state.filters.period=document.getElementById('flt-period').value;
+    state.selected.clear();render();return;
+  }
+  if(action==='select-all'){const recs=filteredRecords();if(state.selected.size===recs.length)state.selected.clear();else recs.forEach(r=>state.selected.add(r.id));render();return;}
+  if(action==='batch-company'||action==='batch-progress'||action==='batch-delete'){
+    if(!guard())return;
+    if(!state.selected.size){toast(t('noData'),'danger');return;}
+    if(action==='batch-delete'){confirmBox(t('confirmBatch',{n:state.selected.size}),async()=>{
+      for(const r of state.records.filter(x=>state.selected.has(x.id))){r.deletedAt=localISO(new Date());r.updatedAt=r.deletedAt;}
+      await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();render();toast(t('deleted'),'ok');
+    },true);return;}
+    if(action==='batch-company'){
+      const comps=dictItems('reimbursements').filter(x=>x.parentId);
+      promptBox(t('batchCompany'),'',async v=>{
+        for(const r of state.records.filter(x=>state.selected.has(x.id))){r.reimbursementEntity=v||'未分类';r.updatedAt=localISO(new Date());}
+        await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();render();toast(t('saved'),'ok');
+      });return;
+    }
+    if(action==='batch-progress'){
+      const vals=dictItems('progresses',null);
+      modal('<h2>'+esc(t('batchProgress'))+'</h2><div class="field"><select id="batchProgressValue">'+vals.map(x=>'<option value="'+esc(x.value)+'">'+esc(x.label)+'</option>').join('')+'</select></div><div class="btn-row"><button class="btn primary" data-action="batch-progress-apply">'+esc(t('apply'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);return;
+    }
+  }
+  if(action==='batch-progress-apply'){
+    const v=document.getElementById('batchProgressValue').value;
+    for(const r of state.records.filter(x=>state.selected.has(x.id))){r.reimbursementStatus=v;r.updatedAt=localISO(new Date());}
+    await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();closeModal();render();toast(t('saved'),'ok');return;
+  }
+  if(action==='check-invoices'){await checkInvoices();return;}
+  if(action==='export-csv'){state.exportScope='filtered';exportCSV();return;}
+  if(action==='export-pdf'){state.exportScope='filtered';state.groupByCompany=document.getElementById('group-company').checked;exportPDF();return;}
+  if(action==='save-settings'){
+    if(!guard())return;
+    const m={...state.meta};
+    m.datasetName=document.getElementById('d-name').value.trim();
+    m.period={...m.period,planDocName:document.getElementById('d-plan').value,
+      year:Number(document.getElementById('d-year').value)||new Date().getFullYear(),
+      month:Math.min(12,Math.max(1,Number(document.getElementById('d-month').value)||1)),
+      customDay:Math.min(31,Math.max(1,Number(document.getElementById('d-day').value)||26)),
+      startDate:document.getElementById('d-start').value,endDate:document.getElementById('d-end').value};
+    m.periodMode=document.getElementById('d-mode').value;
+    const test={...m};const pp=computePeriod(test);
+    if(m.periodMode==='trip'){m.period.startDate=pp.start;m.period.endDate=pp.end;}
+    const outside=activeRecords().filter(r=>!inPeriod(r,{start:pp.start+'T00:00:00',end:pp.end+'T23:59:59'})).length;
+    const apply=async()=>{state.meta=m;await saveMeta();render();toast(t('saved'),'ok');};
+    if(outside)confirmBox(t('periodOutside',{n:outside}),apply);else await apply();
+    return;
+  }
+  if(action==='save-prefs'){
+    state.meta.uiLanguage=document.getElementById('d-lang').value;
+    state.meta.theme=document.getElementById('d-theme').value;
+    await saveMeta();setLang(state.meta.uiLanguage);applyTheme();render();toast(t('saved'),'ok');return;
+  }
+  if(action==='toggle-lock'){
+    if(isLocked()){
+      const doUnlock=async()=>{const finish=async()=>{confirmBox(t('confirmUnlock'),async()=>{state.meta.locked=false;await saveMeta();render();toast(t('lockChanged'),'ok');});};
+        if(state.meta.pinEnabled)pinBox(pin=>{if(!checkPin(pin)){toast(t('pinWrong'),'danger');return;}finish();});else await finish();};
+      await doUnlock();
+    }else{
+      confirmBox(t('confirmLock'),async()=>{state.meta.locked=true;await saveMeta();render();toast(t('lockChanged'),'ok');});
+    }
+    return;
+  }
+  if(action==='toggle-pin'){
+    if(!guard())return;
+    if(state.meta.pinEnabled){
+      pinBox(async pin=>{if(!checkPin(pin)){toast(t('pinWrong'),'danger');return;}confirmBox(t('confirm'),async()=>{state.meta.pinEnabled=false;state.meta.pinSalt=null;state.meta.pinHash=null;await saveMeta();render();toast(t('pinDisabled'),'ok');});});
+    }else{
+      confirmBox(t('enablePin'),async()=>{promptBox(t('pinHint'),'',async pin=>{
+        if(!/^\d{4,6}$/.test(pin)){toast(t('amountInvalid'),'danger');return;}
+        state.meta.pinSalt=uid();state.meta.pinHash=fnv1a(state.meta.pinSalt+pin);state.meta.pinEnabled=true;
+        await saveMeta();render();toast(t('pinEnabled'),'ok');
+      },'text');});
+    }
+    return;
+  }
+  if(action==='forgot-pin'){
+    confirmBox(t('forgotPinFlow'),async()=>{
+      const payload=jsonPayload(true);const name=(state.meta.datasetName||'backup')+'_'+dateInputValue(new Date()).replace(/-/g,'')+'.json';
+      downloadText(JSON.stringify(payload,null,2),name);await initializeData();
+    },true);return;
+  }
+  if(action==='export-json'){await exportJSON();return;}
+  if(action==='copy-json'){await copyJSON();return;}
+  if(action==='import-json'){
+    if(!guard())return;
+    if(hasData()){toast(t('importDisabled'),'danger');return;}
+    pickFile('.json,application/json',files=>readImportFile(files[0]));return;
+  }
+  if(action==='choose-folder'){pickFile('',files=>{state.folderManifest=new Set(files.map(f=>(f.webkitRelativePath||f.name).toLowerCase()));toast(t('chooseFolder'),'ok');},true,true);return;}
+  if(action==='initialize'){
+    if(!guard())return;
+    confirmBox(t('initReminder'),()=>confirmBox(t('confirmInit'),async()=>{await exportJSON();await initializeData();},true));return;
+  }
+  if(action==='confirm-import'){await doImport();return;}
+}
+
+function syncWizardInputs(){
+  const w=state.wizard;if(!w)return;
+  const q=id=>document.getElementById(id);
+  if(w.step===1){if(q('wizName'))w.datasetName=q('wizName').value.trim();if(q('wizPlan'))w.planDocName=q('wizPlan').value;}
+  if(w.step===2){
+    if(q('wizMode'))w.periodMode=q('wizMode').value;
+    if(q('wizYear'))w.year=Number(q('wizYear').value)||new Date().getFullYear();
+    if(q('wizMonth'))w.month=Number(q('wizMonth').value)||1;
+    if(q('wizDay'))w.customDay=Number(q('wizDay').value)||26;
+    if(q('wizStart'))w.startDate=q('wizStart').value;
+    if(q('wizEnd'))w.endDate=q('wizEnd').value;
+  }
+}
+function syncFormInputs(){
+  const q=id=>document.getElementById(id);const f=state.form;if(!f)return;
+  if(q('f-type'))f.type=q('f-type').value;
+  if(q('f-purpose'))f.purpose=q('f-purpose').value;
+  if(q('f-amount'))f.amountText=q('f-amount').value;
+  if(q('f-currency'))f.currency=q('f-currency').value;
+  if(q('f-pay1'))f.paymentL1=q('f-pay1').value;
+  if(q('f-pay2'))f.paymentL2=q('f-pay2').value;
+  if(q('f-cat1'))f.categoryL1=q('f-cat1').value;
+  if(q('f-cat2'))f.categoryL2=q('f-cat2').value;
+  if(q('f-reimb'))f.reimbursementValue=q('f-reimb').value;
+  if(q('f-company'))f.reimbursementEntity=q('f-company').value;
+  if(q('f-progress'))f.progress=q('f-progress').value;
+  if(q('f-brief'))f.brief=q('f-brief').value;
+  if(q('f-note'))f.note=q('f-note').value;
+  if(q('f-date'))f.occurredDate=q('f-date').value;
+  if(q('f-time'))f.occurredTime=q('f-time').value;
+}
+function readImportFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let obj;
+    try{obj=JSON.parse(reader.result);}catch(e){toast(t('jsonInvalid'),'danger');return;}
+    const err=validatePayload(obj);
+    if(err){modal('<h2>'+esc(t('validationFail',{msg:err}))+'</h2><p>'+esc(t('importGuide'))+'</p><div class="btn-row"><button class="btn" data-action="modal-close">'+esc(t('close'))+'</button></div>',true);return;}
+    state.importCandidate=obj;importPreview();
+  };
+  reader.onerror=()=>toast(t('fileTooLarge'),'danger');
+  reader.readAsText(file);
+}
+function autoGrow(el){if(el&&el.tagName==='TEXTAREA'){el.style.height='auto';el.style.height=(el.scrollHeight+2)+'px';}}
+
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-action]');if(!el)return;
+  const action=el.dataset.action;
+  if(action==='modal-mask'&&e.target!==el)return;
+  e.preventDefault();
+  try{await handleAction(action,el);}catch(err){console.error(err);toast(String(err&&err.message||err),'danger');}
+});
+document.addEventListener('change',async e=>{
+  const t=e.target;
+  if(t.classList.contains('row-check')){if(t.checked)state.selected.add(t.dataset.id);else state.selected.delete(t.dataset.id);return;}
+  if(t.id==='wizMode'){syncWizardInputs();render();return;}
+  if(t.id==='f-pay1'||t.id==='f-cat1'||t.id==='f-reimb'){
+    syncFormInputs();
+    if(t.id==='f-pay1'){const p=dictItems('payments').find(x=>x.label===state.form.paymentL1);const kids=dictItems('payments').filter(x=>x.parentId===(p&&p.id));state.form.paymentL2=kids[0]?kids[0].label:'';}
+    if(t.id==='f-cat1'){const p=dictItems('categories').find(x=>x.label===state.form.categoryL1);const kids=dictItems('categories').filter(x=>x.parentId===(p&&p.id));state.form.categoryL2=kids[0]?kids[0].label:'未分类';}
+    render();return;
+  }
+});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  autoGrow(el);
+  if(state.view==='form'&&el.id&&el.id.indexOf('f-')===0)syncFormInputs();
+});
+
+async function init(){
+  try{
+    state.db=await openDB();await loadAll();
+    if(!state.meta.datasetName&&state.records.length===0){
+      state.wizard={step:0,lang:state.meta.uiLanguage,datasetName:'',planDocName:'',periodMode:state.meta.periodMode||'standard',year:state.meta.period.year,month:state.meta.period.month,customDay:state.meta.period.customDay||26,startDate:'',endDate:''};
+      state.view='wizard';
+    }
+    render();
+    if('serviceWorker' in navigator&&location.protocol!=='file:'&&location.protocol!=='http:'){
+      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    }
+  }catch(err){console.error(err);document.getElementById('app').innerHTML='<div class="card"><h2>Initialization failed</h2><p>'+esc(err.message||err)+'</p></div>';}
+}
+init();
+})();
+</script>
+</body>
+</html>
