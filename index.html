@@ -109,7 +109,7 @@ tr:last-child td{border-bottom:none}
 .dict-row select{min-height:36px;padding:7px 9px}
 .sep{height:1px;background:var(--border);margin:18px 0}
 .muted{color:var(--muted)}
-.missing{color:var(--danger);font-weight:600}
+.missing,.stale-text,.stale-opt{color:var(--danger);font-weight:600}
 .hidden{display:none!important}
 .wizard-step{display:flex;gap:6px;margin-bottom:18px}
 .dot{width:28px;height:5px;border-radius:99px;background:var(--surface3)}
@@ -118,9 +118,11 @@ tr:last-child td{border-bottom:none}
 @media print{
   body>*{display:none!important}
   #printArea{display:block!important;background:#fff;color:#000;padding:12px}
+  #printArea *{background:#fff!important;color:#000!important;box-shadow:none!important;text-shadow:none!important}
   #printArea table{min-width:0;width:100%;border-collapse:collapse}
-  #printArea th,#printArea td{border:1px solid #999;padding:6px;font-size:11px;white-space:normal}
+  #printArea th,#printArea td{border:1px solid #bbb!important;padding:6px;font-size:11px;white-space:normal;background:#fff!important}
   #printArea h2{font-size:16px}
+  #printArea .sub{color:#000!important}
 }
 @media(max-width:700px){
   .app{padding:12px 10px 60px}
@@ -208,7 +210,13 @@ const I18N={
  chooseInvoice:'选择发票', choosePlan:'选择计划文件', folderTip:'可选：先选择发票文件夹以便后续校验',
  importDisabled:'当前数据库已有数据。请先导出备份并初始化清空，再导入。',
  previewNote:'确认后将完全覆盖当前空数据库。', emptyDb:'空数据库',
- fileTooLarge:'文件过大或读取失败', jsonInvalid:'JSON 解析失败'
+ fileTooLarge:'文件过大或读取失败', jsonInvalid:'JSON 解析失败',
+ dictFile:'字典档', exportDict:'导出字典档', importDict:'导入字典档',
+ dictImportPreview:'字典档导入预览', dictImportNote:'导入后以字典档内容为准；记录中已修改或删除的分类不会被改写，并会标红提示需重新分类。',
+ dictConflict:'有 {n} 笔记录使用了字典档中不存在的分类，需重新分类。', dictImportConfirm:'确认导入字典档',
+ dictImported:'字典档已导入', dictExportSuccess:'字典档已导出', dictInvalid:'字典档格式或校验失败',
+ needsReclass:'需重新分类', dictStale:'字典已变更，需重新分类', topLevelCategory:'一级分类',
+ customValue:'自定义…', softReminder:'以下为软删除记录，仅供提醒，不计入统计', time:'时间', deletedAt:'删除时间'
 },
 'en':{
  appTitle:'Expense Tracker', startup:'Startup check', datasetName:'Dataset name', lastRecord:'Last record',
@@ -271,7 +279,13 @@ const I18N={
  chooseInvoice:'Choose invoice', choosePlan:'Choose plan file', folderTip:'Optional: choose invoice folder for later checks',
  importDisabled:'This dataset is not empty. Export and initialize it before importing.',
  previewNote:'Confirming will fully overwrite the current empty database.', emptyDb:'Empty database',
- fileTooLarge:'File too large or unreadable', jsonInvalid:'Invalid JSON'
+ fileTooLarge:'File too large or unreadable', jsonInvalid:'Invalid JSON',
+ dictFile:'Dictionary file', exportDict:'Export dictionary', importDict:'Import dictionary',
+ dictImportPreview:'Dictionary import preview', dictImportNote:'The imported dictionary replaces the current one. Values already saved in records are kept and marked red as needing reclassification if they no longer exist.',
+ dictConflict:'{n} records use values missing from the dictionary and need reclassification.', dictImportConfirm:'Confirm dictionary import',
+ dictImported:'Dictionary imported', dictExportSuccess:'Dictionary exported', dictInvalid:'Invalid dictionary file or checksum',
+ needsReclass:'Needs reclassification', dictStale:'Dictionary changed - reclassification needed', topLevelCategory:'Top-level category',
+ customValue:'Custom…', softReminder:'Soft-deleted records below are a reminder only and are excluded from totals.', time:'Time', deletedAt:'Deleted at'
 }
 ,'zh-TW':{
  appTitle:'收支紀錄', startup:'啟動確認', datasetName:'資料檔名稱', lastRecord:'最後紀錄時間',
@@ -332,7 +346,13 @@ const I18N={
  chooseInvoice:'選擇發票', choosePlan:'選擇計畫檔案', folderTip:'可選：先選擇發票資料夾以便後續校驗',
  importDisabled:'目前資料庫已有資料。請先匯出備份並初始化清空，再匯入。',
  previewNote:'確認後將完全覆蓋目前的空資料庫。', emptyDb:'空資料庫',
- fileTooLarge:'檔案過大或讀取失敗', jsonInvalid:'JSON 解析失敗'
+ fileTooLarge:'檔案過大或讀取失敗', jsonInvalid:'JSON 解析失敗',
+ dictFile:'字典檔', exportDict:'匯出字典檔', importDict:'匯入字典檔',
+ dictImportPreview:'字典檔匯入預覽', dictImportNote:'匯入後以字典檔內容為準；紀錄中已修改或刪除的分類不會被改寫，並會標紅提示需重新分類。',
+ dictConflict:'有 {n} 筆紀錄使用字典檔中不存在的分類，需重新分類。', dictImportConfirm:'確認匯入字典檔',
+ dictImported:'字典檔已匯入', dictExportSuccess:'字典檔已匯出', dictInvalid:'字典檔格式或校驗失敗',
+ needsReclass:'需重新分類', dictStale:'字典已變更，需重新分類', topLevelCategory:'一級分類',
+ customValue:'自訂…', softReminder:'以下為軟刪除紀錄，僅供提醒，不計入統計', time:'時間', deletedAt:'刪除時間'
 }
 };
 
@@ -351,9 +371,9 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 
 const state={
   db:null, meta:null, dictionaries:[], records:[],
-  view:'startup', form:null, wizard:null, importCandidate:null,
+  view:'startup', form:null, wizard:null, importCandidate:null, dictCandidate:null,
   filters:{keyword:'',category:'',currency:'',company:'',progress:'',period:'current'},
-  selected:new Set(), folderManifest:null,
+  selected:new Set(), folderManifest:null, groupByCompany:false,
   dataForm:null, busy:false
 };
 
@@ -414,6 +434,20 @@ function money(cents){return ((Number(cents)||0)/100).toFixed(2);}
 function daysBetween(iso){
   if(!iso) return Infinity;
   return Math.floor((Date.now()-new Date(iso).getTime())/86400000);
+}
+function fileStamp(){const d=new Date();return dateInputValue(d).replace(/-/g,'')+'_'+timeInputValue(d).replace(':','')+'_'+String(d.getSeconds()).padStart(2,'0');}
+function reportNamePrefix(){
+  const p=storedPeriodBounds(state.meta);
+  const base=(state.meta.datasetName||'records').replace(/[\\/:*?"<>|]/g,'_');
+  const s=(p.start||' PeriodStart ').replace(/-/g,''), e=(p.end||'PeriodEnd').replace(/-/g,'');
+  return base+'_'+s+'_'+e;
+}
+function dateTimeParts(iso){
+  const m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(m) return {date:m[1]+'/'+m[2]+'/'+m[3],time:m[4]+':'+m[5]};
+  const d=new Date(iso);
+  if(isNaN(d)) return {date:String(iso||'-'),time:'-'};
+  return {date:dateInputValue(d).replace(/-/g,'/'),time:timeInputValue(d)};
 }
 
 function defaultMeta(){
@@ -521,6 +555,24 @@ function dictTypeName(type){
   if(type==='reimbursements')return t('reimbursement');
   return t('progress');
 }
+function dictHasValue(type,value){
+  if(!value) return true;
+  return state.dictionaries.some(d=>d.type===type&&(d.label===value||d.value===value));
+}
+function staleDictFields(r,dicts){
+  const list=dicts||state.dictionaries;
+  const has=(type,value)=>!value||list.some(d=>d.type===type&&(d.label===value||d.value===value));
+  const out=[];
+  if(!has('currencies',r.currency)) out.push(t('currency'));
+  if(!has('payments',r.paymentL1)) out.push(t('payment'));
+  if(!has('payments',r.paymentL2)) out.push(t('payment'));
+  if(!has('categories',r.categoryL1)) out.push(t('category'));
+  if(!has('categories',r.categoryL2)) out.push(t('category'));
+  if(r.reimbursable&&!has('reimbursements',r.reimbursementEntity)) out.push(t('company'));
+  if(!has('progresses',r.reimbursementStatus)) out.push(t('progress'));
+  return Array.from(new Set(out));
+}
+function staleRecordCount(dicts){return state.records.filter(r=>!r.deletedAt&&staleDictFields(r,dicts).length).length;}
 function lastRecordTime(){
   let last=null; state.records.forEach(r=>{const v=r.updatedAt||r.createdAt;if(v&&(!last||v>last))last=v;});return last;
 }
@@ -675,20 +727,24 @@ function firstDictChild(type,parentLabel){
 function normalizeLinkedDefaults(f){
   if(!f) return f;
   const payL1=dictItems('payments',null).filter(x=>x.label!=='未分类');
-  if(payL1.length&&!payL1.some(x=>x.label===f.paymentL1)) f.paymentL1=payL1[0].label;
+  if(!f.paymentL1&&payL1.length) f.paymentL1=payL1[0].label;
   const payKids=dictItems('payments').filter(x=>x.parentId===(dictItems('payments').find(p=>p.label===f.paymentL1)||{}).id);
-  if(payKids.length&&!payKids.some(x=>x.label===f.paymentL2)) f.paymentL2=payKids[0].label;
+  if(!f.paymentL2&&payKids.length) f.paymentL2=payKids[0].label;
   const catL1=dictItems('categories',null).filter(x=>x.label!=='未分类');
-  if(catL1.length&&!catL1.some(x=>x.label===f.categoryL1)) f.categoryL1=catL1[0].label;
+  if(!f.categoryL1&&catL1.length) f.categoryL1=catL1[0].label;
   const catKids=dictItems('categories').filter(x=>x.parentId===(dictItems('categories').find(p=>p.label===f.categoryL1)||{}).id);
-  if(catKids.length&&!catKids.some(x=>x.label===f.categoryL2)) f.categoryL2=catKids[0].label;
+  if(!f.categoryL2&&catKids.length) f.categoryL2=catKids[0].label;
   return f;
 }
 function emptyForm(){
   const now=new Date();
-  return normalizeLinkedDefaults({id:null,type:'expense',purpose:'business',amountText:'',currency:'RMB',
-    paymentL1:'APP',paymentL2:'支付宝',categoryL1:'未分类',categoryL2:'未分类',
-    reimbursementValue:'yes',reimbursementEntity:'上海公司',progress:'unsubmitted',
+  const pay=dictItems('payments',null).filter(x=>x.label!=='未分类')[0];
+  const cat=dictItems('categories',null).filter(x=>x.label!=='未分类')[0];
+  const cur=dictItems('currencies',null).find(x=>x.label==='RMB')||dictItems('currencies',null)[0];
+  const comp=dictItems('reimbursements').filter(x=>x.parentId)[0];
+  return normalizeLinkedDefaults({id:null,type:'expense',purpose:'business',amountText:'',currency:cur?cur.label:'',
+    paymentL1:pay?pay.label:'',paymentL2:'',categoryL1:cat?cat.label:'',categoryL2:'',
+    reimbursementValue:'yes',reimbursementEntity:comp?comp.label:'',progress:'unsubmitted',
     brief:'',note:'',invoice:{name:'',relativePath:'',status:'unchecked',checkedAt:null},
     periodRef:periodRefCurrent(),
     occurredDate:dateInputValue(now),occurredTime:timeInputValue(now)});
@@ -702,9 +758,10 @@ function recordToForm(r){
     periodRef:r.periodRef||periodRefCurrent(),
     occurredDate:(r.occurredAt||'').slice(0,10),occurredTime:(r.occurredAt||'').slice(11,16)});
 }
-function opts(items,current,emptyLabel){
+function opts(items,current,emptyLabel,allowStale){
   let s=emptyLabel?'<option value="">'+esc(emptyLabel)+'</option>':'';
   items.forEach(x=>{s+='<option value="'+esc(x.label)+'" '+(current===x.label?'selected':'')+'>'+esc(x.label)+'</option>';});
+  if(allowStale&&current&&!items.some(x=>x.label===current)) s+='<option value="'+esc(current)+'" selected class="stale-opt">'+esc(current)+' · '+esc(t('needsReclass'))+'</option>';
   return s;
 }
 function renderForm(){
@@ -718,18 +775,22 @@ function renderForm(){
   const companies=dictItems('reimbursements').filter(x=>x.parentId);
   const progresses=dictItems('progresses',null);
   const invoiceStatus=f.invoice&&f.invoice.name?(f.invoice.status==='missing'?t('missing'):f.invoice.status==='ok'?t('ok'):t('unchecked')):'';
+  const formStale=staleDictFields({currency:f.currency,paymentL1:f.paymentL1,paymentL2:f.paymentL2,
+    categoryL1:f.categoryL1,categoryL2:f.categoryL2,reimbursable:f.reimbursementValue==='yes',
+    reimbursementEntity:f.reimbursementEntity,reimbursementStatus:f.progress});
   return header()+'<div class="card wide"><h2>'+esc(f.id?t('edit'):t('addRecord'))+'</h2>'+
+    (formStale.length?'<div class="chip danger" style="margin-bottom:12px">'+esc(t('dictStale'))+'：'+esc(formStale.join(' / '))+'</div>':'')+
     '<div class="grid">'+
     fieldSelect(t('type'),'f-type',['expense','income'].map(x=>({label:t(x)})),f.type==='expense'?t('expense'):t('income'),['expense','income'],'f-type-val')+
     fieldSelect(t('purpose'),'f-purpose',['business','private','family'].map(x=>({label:t(x)})),t(f.purpose),['business','private','family'],'f-purpose-val')+
     fieldInput(t('amount'),'f-amount',f.amountText,'0.00')+
-    '<div class="field"><label>'+esc(t('currency'))+'</label><div class="inline"><select id="f-currency">'+opts(dictItems('currencies',null),f.currency)+'</select><button class="btn small" data-action="edit-dict" data-type="currencies">'+esc(t('editDict'))+'</button></div></div>'+
-    '<div class="field"><label>'+esc(t('payment'))+'</label><div class="inline"><select id="f-pay1">'+opts(payL1,f.paymentL1)+'</select><select id="f-pay2">'+opts(payL2,f.paymentL2)+'</select><button class="btn small" data-action="edit-dict" data-type="payments">'+esc(t('editDict'))+'</button></div></div>'+
-    '<div class="field"><label>'+esc(t('category'))+'</label><div class="inline"><select id="f-cat1">'+opts(catL1,f.categoryL1)+'</select><select id="f-cat2">'+opts(catL2,f.categoryL2)+'</select><button class="btn small" data-action="edit-dict" data-type="categories">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('currency'))+'</label><div class="inline"><select id="f-currency">'+opts(dictItems('currencies',null),f.currency,'',true)+'</select><button class="btn small" data-action="edit-dict" data-type="currencies">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('payment'))+'</label><div class="inline"><select id="f-pay1">'+opts(payL1,f.paymentL1,'',true)+'</select><select id="f-pay2">'+opts(payL2,f.paymentL2,'',true)+'</select><button class="btn small" data-action="edit-dict" data-type="payments">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('category'))+'</label><div class="inline"><select id="f-cat1">'+opts(catL1,f.categoryL1,'',true)+'</select><select id="f-cat2">'+opts(catL2,f.categoryL2,'',true)+'</select><button class="btn small" data-action="edit-dict" data-type="categories">'+esc(t('editDict'))+'</button></div></div>'+
     '<div class="field"><label>'+esc(t('reimbursement'))+'</label><div class="inline"><select id="f-reimb">'+reimbL1.map(x=>'<option value="'+esc(x.value)+'" '+(f.reimbursementValue===x.value?'selected':'')+'>'+esc(x.label)+'</option>').join('')+'</select>'+
-      '<select id="f-company" class="'+(f.reimbursementValue==='yes'?'':'hidden')+'">'+opts(companies,f.reimbursementEntity)+'</select>'+
+      '<select id="f-company" class="'+(f.reimbursementValue==='yes'?'':'hidden')+'">'+opts(companies,f.reimbursementEntity,'',true)+'</select>'+
       '<button class="btn small" data-action="edit-dict" data-type="reimbursements">'+esc(t('editDict'))+'</button></div></div>'+
-    '<div class="field"><label>'+esc(t('progress'))+'</label><div class="inline"><select id="f-progress">'+progresses.map(x=>'<option value="'+esc(x.value)+'" '+(f.progress===x.value?'selected':'')+'>'+esc(x.label)+'</option>').join('')+'</select><button class="btn small" data-action="edit-dict" data-type="progresses">'+esc(t('editDict'))+'</button></div></div>'+
+    '<div class="field"><label>'+esc(t('progress'))+'</label><div class="inline"><select id="f-progress">'+progresses.map(x=>'<option value="'+esc(x.value)+'" '+(f.progress===x.value?'selected':'')+'>'+esc(x.label)+'</option>').join('')+(f.progress&&!progresses.some(x=>x.value===f.progress)?'<option value="'+esc(f.progress)+'" selected class="stale-opt">'+esc(f.progress)+' · '+esc(t('needsReclass'))+'</option>':'')+'</select><button class="btn small" data-action="edit-dict" data-type="progresses">'+esc(t('editDict'))+'</button></div></div>'+
     '<div class="field"><label>'+esc(t('brief'))+'</label><input id="f-brief" value="'+esc(f.brief)+'" maxlength="60"></div>'+
     '<div class="field"><label>'+esc(t('recordTime'))+'</label><div class="inline"><input id="f-date" type="date" value="'+esc(f.occurredDate)+'"><input id="f-time" type="time" value="'+esc(f.occurredTime)+'"></div></div>'+
     '</div>'+
@@ -777,9 +838,10 @@ function renderManage(){
   const row=r=>{
     const rel=relOf(r);
     const inv=r.invoice&&r.invoice.name?(r.invoice.status==='missing'?'<span class="missing">'+esc(t('invoiceMissing'))+': '+esc(r.invoice.name)+'</span>':esc(r.invoice.name)):'-';
+    const stale=staleDictFields(r);
     return '<div class="list-item"><div class="list-head"><div><label><input type="checkbox" class="row-check" data-id="'+esc(r.id)+'" '+(state.selected.has(r.id)?'checked':'')+'> <span class="list-title">'+esc(r.brief||t('unclassified'))+'</span></label>'+
       '<div class="list-meta">'+esc(formatOccurred(r.occurredAt))+' · '+esc(r.categoryL1)+' / '+esc(r.categoryL2)+' · '+esc(r.paymentL1)+' / '+esc(r.paymentL2)+' · '+esc(inv)+
-      ' · <span class="chip">'+esc(relationLabel(rel))+'</span></div></div>'+
+      ' · <span class="chip">'+esc(relationLabel(rel))+'</span>'+(stale.length?' · <span class="chip danger">'+esc(t('dictStale'))+'：'+esc(stale.join(' / '))+'</span>':'')+'</div></div>'+
       '<div style="text-align:right"><div class="amount '+r.type+'">'+(r.type==='income'?'+':'-')+money(r.amountCents)+' '+esc(r.currency)+'</div>'+
       '<div class="sub">'+esc(r.reimbursable?t('reimbursable')+' · '+esc(r.reimbursementEntity):t('notReimbursable'))+' · '+esc(progressLabel(r.reimbursementStatus))+'</div></div></div>'+
       '<div class="btn-row"><button class="btn small" data-action="edit-record" data-id="'+esc(r.id)+'">'+esc(t('edit'))+'</button>'+
@@ -787,9 +849,16 @@ function renderManage(){
       '<button class="btn small danger" data-action="delete-record" data-id="'+esc(r.id)+'">'+esc(t('delete'))+'</button></div></div>';
   };
   const section=(title,list)=>list.length?'<h3 style="margin-top:14px">'+esc(title)+' <span class="sub">'+list.length+' '+esc(t('records'))+'</span></h3><div class="list">'+list.map(row).join('')+'</div>':'';
-  const list=recs.length?
-    section(t('beforePeriod'),groups.before)+section(t('insidePeriod'),groups.inside)+section(t('afterPeriod'),groups.after)+section(t('otherPeriod'),groups.other):
-    '<div class="sub">'+esc(t('noRecords'))+'</div>';
+  let list='';
+  if(!recs.length) list='<div class="sub">'+esc(t('noRecords'))+'</div>';
+  else if(state.groupByCompany){
+    const byCompany={};
+    recs.forEach(r=>{const key=r.reimbursable?(r.reimbursementEntity||t('unclassified')):t('notReimbursable');(byCompany[key]=byCompany[key]||[]).push(r);});
+    Object.keys(byCompany).sort().forEach(c=>{
+      byCompany[c].sort((a,b)=>(b.occurredAt||'').localeCompare(a.occurredAt||''));
+      list+=section(t('company')+'：'+c,byCompany[c]);
+    });
+  }else list=section(t('beforePeriod'),groups.before)+section(t('insidePeriod'),groups.inside)+section(t('afterPeriod'),groups.after)+section(t('otherPeriod'),groups.other);
   return header()+'<div class="card wide"><h2>'+esc(t('manageRecords'))+'</h2>'+
     '<div class="row"><div class="field"><label>'+esc(t('keyword'))+'</label><input id="flt-keyword" value="'+esc(state.filters.keyword)+'"></div>'+
     '<div class="field"><label>'+esc(t('category'))+'</label><select id="flt-category"><option value="">'+esc(t('all'))+'</option>'+opts(cats,'')+'</select></div>'+
@@ -801,7 +870,7 @@ function renderManage(){
     '<button class="btn small" data-action="check-invoices">'+esc(t('checkInvoices'))+'</button>'+
     '<button class="btn small" data-action="export-csv">'+esc(t('exportCsv'))+'</button>'+
     '<button class="btn small" data-action="export-pdf">'+esc(t('exportPdf'))+'</button>'+
-    '<label class="chip"><input type="checkbox" id="group-company"> '+esc(t('groupByCompany'))+'</label></div>'+
+    '<label class="chip"><input type="checkbox" id="group-company" '+(state.groupByCompany?'checked':'')+'> '+esc(t('groupByCompany'))+'</label></div>'+
     '<div class="toolbar"><button class="btn small" data-action="select-all">'+esc(t('selectAll'))+'</button>'+
     '<button class="btn small" data-action="batch-company">'+esc(t('batchCompany'))+'</button>'+
     '<button class="btn small" data-action="batch-progress">'+esc(t('batchProgress'))+'</button>'+
@@ -848,6 +917,8 @@ function renderData(){
     '<button class="btn small" data-action="export-json">'+esc(t('exportJson'))+'</button>'+
     '<button class="btn small" data-action="copy-json">'+esc(t('copyJson'))+'</button>'+
     '<button class="btn small" data-action="import-json" '+(hasData()?'disabled title="'+esc(t('importDisabled'))+'"':'')+'>'+esc(t('importJson'))+'</button>'+
+    '<button class="btn small" data-action="export-dict">'+esc(t('exportDict'))+'</button>'+
+    '<button class="btn small" data-action="import-dict">'+esc(t('importDict'))+'</button>'+
     '<button class="btn small" data-action="choose-folder">'+esc(t('chooseFolder'))+'</button></div>'+
     '<div class="sub" style="margin-top:8px">'+esc(t('folderTip'))+' · '+esc(t('swNote'))+'</div>'+
     '<div class="sep"></div><h3>'+esc(t('dangerZone'))+'</h3>'+
@@ -943,6 +1014,57 @@ async function copyJSON(){
   try{await navigator.clipboard.writeText(text);toast(t('copySuccess'),'ok');}
   catch(e){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast(t('copySuccess'),'ok');}
 }
+function dictPayload(){
+  const payload=JSON.parse(JSON.stringify({schemaVersion:SCHEMA_VERSION,type:'dictionary',exportedAt:localISO(new Date()),dictionaries:state.dictionaries}));
+  payload.checksum={algorithm:'fnv1a',itemCount:payload.dictionaries.length,value:fnv1a(canonical(payload))};
+  return payload;
+}
+function dictChecksumValue(obj){
+  const raw={schemaVersion:obj.schemaVersion,type:obj.type,exportedAt:obj.exportedAt,dictionaries:obj.dictionaries};
+  return fnv1a(canonical(raw));
+}
+function validateDictPayload(obj){
+  if(!obj||obj.type!=='dictionary'||obj.schemaVersion!==SCHEMA_VERSION||!Array.isArray(obj.dictionaries)) return 'structure';
+  if(!obj.checksum||obj.checksum.algorithm!=='fnv1a'||obj.checksum.value!==dictChecksumValue(obj)) return 'checksum';
+  return null;
+}
+function exportDict(){
+  const payload=dictPayload();
+  const name=reportNamePrefix()+'_'+t('dictFile')+'_'+fileStamp()+'.json';
+  downloadText(JSON.stringify(payload,null,2),name.replace(/[\\/:*?"<>|]/g,'_'));
+  toast(t('dictExportSuccess'),'ok');
+}
+function dictImportPreview(){
+  const o=state.dictCandidate;if(!o)return;
+  const conflict=staleRecordCount(o.dictionaries);
+  modal('<h2>'+esc(t('dictImportPreview'))+'</h2><div class="info-grid">'+
+    info(t('dictCount'),String(o.dictionaries.length))+info(t('exportedAt'),formatShort(o.exportedAt))+
+    info(t('checksum'),o.checksum&&o.checksum.value||'-')+
+    '</div><p class="sub">'+esc(t('dictImportNote'))+'</p>'+
+    (conflict?'<div class="chip danger">'+esc(t('dictConflict',{n:conflict}))+'</div>':'')+
+    '<div class="btn-row"><button class="btn primary" data-action="confirm-dict-import">'+esc(t('dictImportConfirm'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);
+}
+async function doImportDict(){
+  const o=state.dictCandidate;if(!o)return;
+  await clearStore('dictionaries');
+  state.dictionaries=o.dictionaries;
+  await putMany('dictionaries',state.dictionaries);
+  if(state.form){state.form.currency=state.form.currency||'';normalizeLinkedDefaults(state.form);}
+  state.dictCandidate=null;closeModal();render();toast(t('dictImported'),'ok');
+}
+function readDictFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let obj;
+    try{obj=JSON.parse(reader.result);}catch(e){toast(t('jsonInvalid'),'danger');return;}
+    const err=validateDictPayload(obj);
+    if(err){toast(t('dictInvalid')+'：'+err,'danger');return;}
+    state.dictCandidate=obj;dictImportPreview();
+  };
+  reader.onerror=()=>toast(t('fileTooLarge'),'danger');
+  reader.readAsText(file);
+}
 function validatePayload(obj){
   if(!obj||obj.schemaVersion!==SCHEMA_VERSION) return 'schemaVersion';
   if(!Array.isArray(obj.records)||!Array.isArray(obj.dictionaries)||!obj.meta) return 'structure';
@@ -987,29 +1109,51 @@ function pickFile(accept,cb,multiple,folder){
   input.click();
 }
 function csvEscape(v){const s=String(v==null?'':v);return '"'+s.replace(/"/g,'""')+'"';}
+function csvRow(arr){return arr.map(csvEscape).join(',');}
 function exportCSV(){
   const recs=state.exportScope==='all'?activeRecords():filteredRecords();
-  const head=[t('date'),t('type'),t('purpose'),t('amount'),t('currency'),t('payment'),t('category'),t('reimbursement'),t('company'),t('progress'),t('brief'),t('note'),t('invoice')];
-  const lines=[head.map(csvEscape).join(',')];
-  recs.forEach(r=>lines.push([formatOccurred(r.occurredAt),t(r.type),t(r.purpose),money(r.amountCents),r.currency,r.paymentL1+'/'+r.paymentL2,r.categoryL1+'/'+r.categoryL2,r.reimbursable?t('reimbursable'):t('notReimbursable'),r.reimbursementEntity,progressLabel(r.reimbursementStatus),r.brief,r.note,r.invoice&&r.invoice.name].map(csvEscape).join(',')));
-  downloadText('\ufeff'+lines.join('\r\n'),(state.meta.datasetName||'records')+'_'+dateInputValue(new Date()).replace(/-/g,'')+'.csv','text/csv;charset=utf-8');
+  const head=[t('date'),t('time'),t('type'),t('purpose'),t('amount'),t('currency'),t('payment'),t('category'),t('reimbursement'),t('company'),t('progress'),t('brief'),t('note'),t('invoice')];
+  const lines=[csvRow(head)];
+  recs.forEach(r=>{const d=dateTimeParts(r.occurredAt);lines.push(csvRow([d.date,d.time,t(r.type),t(r.purpose),money(r.amountCents),r.currency,r.paymentL1+'/'+r.paymentL2,r.categoryL1+'/'+r.categoryL2,r.reimbursable?t('reimbursable'):t('notReimbursable'),r.reimbursable?r.reimbursementEntity:'',progressLabel(r.reimbursementStatus),r.brief,r.note,r.invoice&&r.invoice.name]));});
+  const soft=state.records.filter(r=>r.deletedAt);
+  if(soft.length){
+    lines.push('');
+    lines.push(csvRow([t('softDeleted')+' · '+soft.length+' '+t('records')+' · '+t('softReminder')]));
+    lines.push(csvRow([t('date'),t('time'),t('type'),t('amount'),t('currency'),t('brief'),t('deletedAt')]));
+    soft.forEach(r=>{const d=dateTimeParts(r.occurredAt);const del=dateTimeParts(r.deletedAt);lines.push(csvRow([d.date,d.time,t(r.type),money(r.amountCents),r.currency,r.brief,del.date+' '+del.time]));});
+  }
+  downloadText('\ufeff'+lines.join('\r\n'),reportNamePrefix()+'_'+fileStamp()+'.csv','text/csv;charset=utf-8');
+}
+function reportTable(list,soft){
+  const cols=soft?[t('date'),t('time'),t('type'),t('amount'),t('currency'),t('brief'),t('deletedAt')]:
+    [t('date'),t('time'),t('type'),t('amount'),t('currency'),t('category'),t('company'),t('progress'),t('brief'),t('invoice')];
+  let h='<table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>';
+  list.forEach(r=>{
+    const d=dateTimeParts(r.occurredAt);
+    const cells=soft?[d.date,d.time,t(r.type),money(r.amountCents),r.currency,r.brief,dateTimeParts(r.deletedAt).date+' '+dateTimeParts(r.deletedAt).time]:
+      [d.date,d.time,t(r.type),money(r.amountCents),r.currency,r.categoryL1+'/'+r.categoryL2,r.reimbursable?r.reimbursementEntity:t('notReimbursable'),progressLabel(r.reimbursementStatus),r.brief,r.invoice&&r.invoice.name||''];
+    h+='<tr>'+cells.map(c=>'<td>'+esc(c)+'</td>').join('')+'</tr>';
+  });
+  return h+'</tbody></table>';
 }
 function exportPDF(){
   const recs=state.exportScope==='all'?activeRecords():filteredRecords();
   const group=!!state.groupByCompany;
-  let html='<h2>'+esc(t('reportTitle'))+'</h2><p class="sub">'+esc(state.meta.datasetName)+' · '+esc(periodLabel())+' · '+esc(t('filterLabel'))+': '+esc(state.filters.keyword||t('all'))+'</p>';
-  const renderRows=list=>{
-    let h='<table><thead><tr><th>'+esc(t('date'))+'</th><th>'+esc(t('type'))+'</th><th>'+esc(t('amount'))+'</th><th>'+esc(t('currency'))+'</th><th>'+esc(t('category'))+'</th><th>'+esc(t('company'))+'</th><th>'+esc(t('progress'))+'</th><th>'+esc(t('invoice'))+'</th></tr></thead><tbody>';
-    list.forEach(r=>{h+='<tr><td>'+esc(formatShort(r.occurredAt))+'</td><td>'+esc(t(r.type))+'</td><td>'+money(r.amountCents)+'</td><td>'+esc(r.currency)+'</td><td>'+esc(r.categoryL1+'/'+r.categoryL2)+'</td><td>'+esc(r.reimbursable?r.reimbursementEntity:t('notReimbursable'))+'</td><td>'+esc(progressLabel(r.reimbursementStatus))+'</td><td>'+esc(r.invoice&&r.invoice.name||'')+'</td></tr>';});
-    return h+'</tbody></table>';
-  };
+  const p=storedPeriodBounds(state.meta);
+  let html='<h2>'+esc(t('reportTitle'))+'</h2><p class="sub">'+esc(state.meta.datasetName)+' · '+esc(p.start||'-')+' → '+esc(p.end||'-')+' · '+esc(t('filterLabel'))+': '+esc(state.filters.keyword||t('all'))+'</p>';
   if(group){
-    const groups={};recs.filter(r=>r.reimbursable).forEach(r=>{(groups[r.reimbursementEntity]=groups[r.reimbursementEntity]||[]).push(r);});
-    Object.keys(groups).forEach(c=>{const by={};groups[c].forEach(r=>{by[r.currency]=by[r.currency]||{i:0,e:0};if(r.type==='income')by[r.currency].i+=r.amountCents;else by[r.currency].e+=r.amountCents;});
-      html+='<h3>'+esc(t('company'))+': '+esc(c)+' · '+esc(t('subtotal'))+'</h3>'+renderRows(groups[c])+'<p>'+Object.keys(by).map(k=>esc(k)+' '+t('incomeTotal')+' '+money(by[k].i)+' / '+t('expenseTotal')+' '+money(by[k].e)).join(' · ')+'</p>';});
-  }else html+=renderRows(recs);
+    const groups={};
+    recs.forEach(r=>{const key=r.reimbursable?(r.reimbursementEntity||t('unclassified')):t('notReimbursable');(groups[key]=groups[key]||[]).push(r);});
+    Object.keys(groups).sort().forEach(c=>{
+      const by={};groups[c].forEach(r=>{by[r.currency]=by[r.currency]||{i:0,e:0};if(r.type==='income')by[r.currency].i+=r.amountCents;else by[r.currency].e+=r.amountCents;});
+      html+='<h3>'+esc(t('company'))+'：'+esc(c)+' · '+esc(t('subtotal'))+'</h3>'+reportTable(groups[c])+'<p class="sub">'+Object.keys(by).map(k=>esc(k)+' '+t('incomeTotal')+' '+money(by[k].i)+' / '+t('expenseTotal')+' '+money(by[k].e)).join(' · ')+'</p>';
+    });
+  }else html+=reportTable(recs);
+  const soft=state.records.filter(r=>r.deletedAt);
+  if(soft.length) html+='<h3>'+esc(t('softDeleted'))+' · '+soft.length+' '+esc(t('records'))+' · '+esc(t('softReminder'))+'</h3>'+reportTable(soft,true);
   document.getElementById('printArea').innerHTML=html;
-  window.print();
+  const oldTitle=document.title;document.title=reportNamePrefix();
+  setTimeout(()=>{window.print();setTimeout(()=>{document.title=oldTitle;},800);},0);
 }
 async function checkInvoices(){
   pickFile('',files=>{
@@ -1025,7 +1169,7 @@ function dictModal(type){
   const parents=items.filter(x=>!x.parentId);
   modal('<h2>'+esc(t('editDict'))+' · '+esc(dictTypeName(type))+'</h2><div id="dictList">'+
     items.map(d=>{
-      const parent=d.parentId?dictLabel(d.parentId):'-';
+      const parent=d.parentId?dictLabel(d.parentId):t('topLevelCategory');
       const canDel=!d.system;
       return '<div class="dict-row"><input id="dn-'+d.id+'" value="'+esc(d.label)+'"><span class="sub">'+esc(parent)+'</span>'+
         '<button class="btn small" data-action="dict-rename" data-id="'+d.id+'" data-type="'+type+'">'+esc(t('save'))+'</button>'+
@@ -1053,7 +1197,9 @@ async function deleteDict(type,id){
     kids.forEach(k=>migrateDict(type,k));
     migrateDict(type,item);
     state.dictionaries=state.dictionaries.filter(x=>x.id!==id&&x.parentId!==id);
-    await saveDicts();await putMany('records',state.records);closeModal();render();toast(t('deleted'),'ok');
+    await saveDicts();await putMany('records',state.records);
+    if(state.form)normalizeLinkedDefaults(state.form);
+    closeModal();render();toast(t('deleted'),'ok');
   },true);
 }
 
@@ -1117,11 +1263,11 @@ async function handleAction(action,el){
     const type=el.dataset.type;const name=document.getElementById('dictNewName').value.trim();if(!name){toast(t('nameRequired'),'danger');return;}
     const parentSel=document.getElementById('dictNewParent');const parentId=parentSel?parentSel.value||null:null;
     state.dictionaries.push({id:uid(),type,label:name,parentId,value:name,system:false,sortOrder:state.dictionaries.length});
-    await saveDicts();dictModal(type);toast(t('saved'),'ok');return;
+    await saveDicts();if(state.form)normalizeLinkedDefaults(state.form);render();dictModal(type);toast(t('saved'),'ok');return;
   }
   if(action==='dict-rename'){
     const item=state.dictionaries.find(x=>x.id===id);if(!item)return;const name=document.getElementById('dn-'+id).value.trim();if(!name){toast(t('nameRequired'),'danger');return;}
-    item.label=name;if(!item.system)item.value=name;await saveDicts();dictModal(item.type);toast(t('saved'),'ok');return;
+    item.label=name;if(!item.system)item.value=name;await saveDicts();if(state.form)normalizeLinkedDefaults(state.form);render();dictModal(item.type);toast(t('saved'),'ok');return;
   }
   if(action==='dict-delete'){await deleteDict(el.dataset.type,id);return;}
   if(action==='apply-filter'){applyFiltersFromDOM();render();return;}
@@ -1141,10 +1287,10 @@ async function handleAction(action,el){
     },true);return;}
     if(action==='batch-company'){
       const comps=dictItems('reimbursements').filter(x=>x.parentId);
-      promptBox(t('batchCompany'),'',async v=>{
-        for(const r of state.records.filter(x=>state.selected.has(x.id))){r.reimbursementEntity=v||'未分类';r.updatedAt=localISO(new Date());}
-        await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();render();toast(t('saved'),'ok');
-      });return;
+      modal('<h2>'+esc(t('batchCompany'))+'</h2><div class="field"><label>'+esc(t('company'))+'</label>'+
+        '<select id="batchCompanySelect"><option value="">'+esc(t('customValue'))+'</option>'+opts(comps,'')+'</select></div>'+
+        '<div class="field"><label>'+esc(t('customValue'))+'</label><input id="batchCompanyCustom" placeholder="'+esc(t('customValue'))+'"></div>'+
+        '<div class="btn-row"><button class="btn primary" data-action="batch-company-apply">'+esc(t('apply'))+'</button><button class="btn" data-action="modal-close">'+esc(t('cancel'))+'</button></div>',true);return;
     }
     if(action==='batch-progress'){
       const vals=dictItems('progresses',null);
@@ -1156,6 +1302,14 @@ async function handleAction(action,el){
     for(const r of state.records.filter(x=>state.selected.has(x.id))){r.reimbursementStatus=v;r.updatedAt=localISO(new Date());}
     await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();closeModal();render();toast(t('saved'),'ok');return;
   }
+  if(action==='batch-company-apply'){
+    const v=document.getElementById('batchCompanyCustom').value.trim()||'未分类';
+    for(const r of state.records.filter(x=>state.selected.has(x.id))){r.reimbursementEntity=v;r.reimbursable=true;r.updatedAt=localISO(new Date());}
+    await putMany('records',state.records.filter(x=>state.selected.has(x.id)));state.selected.clear();closeModal();render();toast(t('saved'),'ok');return;
+  }
+  if(action==='export-dict'){exportDict();return;}
+  if(action==='import-dict'){if(!guard())return;pickFile('.json,application/json',files=>readDictFile(files[0]));return;}
+  if(action==='confirm-dict-import'){await doImportDict();return;}
   if(action==='check-invoices'){await checkInvoices();return;}
   if(action==='export-csv'){state.exportScope='filtered';exportCSV();return;}
   if(action==='export-pdf'){state.exportScope='filtered';state.groupByCompany=document.getElementById('group-company').checked;exportPDF();return;}
@@ -1293,6 +1447,8 @@ document.addEventListener('change',async e=>{
   const t=e.target;
   if(t.classList.contains('row-check')){if(t.checked)state.selected.add(t.dataset.id);else state.selected.delete(t.dataset.id);return;}
   if(t.id&&t.id.indexOf('flt-')===0){applyFiltersFromDOM();render();return;}
+  if(t.id==='group-company'){state.groupByCompany=t.checked;render();return;}
+  if(t.id==='batchCompanySelect'){const input=document.getElementById('batchCompanyCustom');if(input&&t.value)input.value=t.value;return;}
   if(t.id==='wizMode'){syncWizardInputs();render();return;}
   if(t.id==='f-pay1'||t.id==='f-cat1'||t.id==='f-reimb'){
     syncFormInputs();
