@@ -104,9 +104,12 @@ tr:last-child td{border-bottom:none}
 .toast{background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;box-shadow:var(--shadow);max-width:90vw;text-align:center}
 .toast.danger{background:var(--danger);color:#fff}
 .toast.ok{background:var(--success);color:#fff}
-.dict-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center;margin-bottom:8px}
+.dict-row{display:grid;grid-template-columns:22px 1fr 1fr auto auto auto;gap:8px;align-items:center;margin-bottom:8px}
 .dict-row input{min-height:36px;padding:7px 9px}
 .dict-row select{min-height:36px;padding:7px 9px}
+.dict-row.dragging{opacity:.45}
+.dict-row.child .drag-handle{cursor:grab;user-select:none;color:var(--muted);text-align:center;font-size:13px}
+.dict-row.child .drag-handle:active{cursor:grabbing}
 .sep{height:1px;background:var(--border);margin:18px 0}
 .muted{color:var(--muted)}
 .missing,.stale-text,.stale-opt{color:var(--danger);font-weight:600}
@@ -129,7 +132,7 @@ tr:last-child td{border-bottom:none}
   .card{padding:15px;border-radius:12px}
   h1{font-size:19px}
   .row>*{flex:1 1 100%}
-  .dict-row{grid-template-columns:1fr 1fr}
+  .dict-row{grid-template-columns:22px 1fr 1fr}
   .btn{flex:1 1 auto}
   .btn-row .btn{flex:1 1 140px}
   .toolbar .btn{flex:0 1 auto}
@@ -152,7 +155,7 @@ const META_KEY='main';
 
 const I18N={
 'zh-CN':{
- appTitle:'收支记录', startup:'启动确认', datasetName:'数据档名称', lastRecord:'最后记录时间',
+ appTitle:'收支记录', startup:'启动确认', datasetName:'账本名称', lastRecord:'最后记录时间',
  archiveStatus:'归档状态', open:'开放记录', locked:'锁定归档', periodMode:'记账方式',
  standard:'标准周期', custom:'自定义周期', trip:'单次出差', year:'年', month:'月',
  startDate:'起始日', endDate:'结束日', approvalDoc:'出差计划 / 核准文件名',
@@ -173,7 +176,7 @@ const I18N={
  addAnother:'再增加一笔记录', backTop:'回到顶部', relation:'周期归属',
  beforePeriod:'周期前 · 提前采购 / 预付', insidePeriod:'周期内', afterPeriod:'周期后 · 延后 / 补记', otherPeriod:'其他周期',
  finishCycle:'结束 / 完成记账周期', finishCycleWarn:'确定完成当前记账周期？系统将锁定数据库、导出 JSON 备份，并初始化为下一周期。', cycleFinished:'记账周期已结束，已导出备份并初始化。',
- exportJson:'导出数据(JSON)', copyJson:'复制JSON', importJson:'导入数据(JSON)', initData:'初始化数据',
+ exportJson:'导出账本数据', copyJson:'复制账本数据', importJson:'导入账本数据', initData:'初始化数据',
  lock:'锁定归档', unlock:'解锁', pin:'PIN 锁', pinHint:'4–6 位数字，仅防误开',
  enablePin:'启用 PIN', disablePin:'关闭 PIN', forgotPin:'忘记 PIN', theme:'主题',
  themeSystem:'跟随系统', themeLight:'浅色', themeDark:'深色', language:'界面语言',
@@ -216,10 +219,15 @@ const I18N={
  dictConflict:'有 {n} 笔记录使用了字典档中不存在的分类，需重新分类。', dictImportConfirm:'确认导入字典档',
  dictImported:'字典档已导入', dictExportSuccess:'字典档已导出', dictInvalid:'字典档格式或校验失败',
  needsReclass:'需重新分类', dictStale:'字典已变更，需重新分类', topLevelCategory:'一级分类',
- customValue:'自定义…', softReminder:'以下为软删除记录，仅供提醒，不计入统计', time:'时间', deletedAt:'删除时间'
+ customValue:'自定义…', softReminder:'以下为软删除记录，仅供提醒，不计入统计', time:'时间', deletedAt:'删除时间',
+ dragSort:'拖拉排序', moveUp:'上移', moveDown:'下移',
+ swLocation:'sw.js 位置', swDefault:'默认（同目录）', swCustom:'自定义公网位置', swUrl:'sw.js 网络地址',
+ swHint:'自定义地址须为与本页面同源的 https 公网地址；跨源地址浏览器会拒绝注册。',
+ swInvalid:'sw.js 地址无效。请输入 https 公网地址。', swCrossOrigin:'sw.js 地址必须与本页面同源，浏览器不允许跨源注册。',
+ swRegisterFail:'sw.js 注册失败', swUnsupported:'当前环境不支持离线缓存'
 },
 'en':{
- appTitle:'Expense Tracker', startup:'Startup check', datasetName:'Dataset name', lastRecord:'Last record',
+ appTitle:'Expense Tracker', startup:'Startup check', datasetName:'Ledger name', lastRecord:'Last record',
  archiveStatus:'Archive status', open:'Open', locked:'Locked', periodMode:'Accounting period',
  standard:'Standard month', custom:'Custom cycle', trip:'Single trip', year:'Year', month:'Month',
  startDate:'Start date', endDate:'End date', approvalDoc:'Trip plan / approval file',
@@ -241,7 +249,7 @@ const I18N={
  addAnother:'Add another record', backTop:'Back to top', relation:'Period relation',
  beforePeriod:'Before period · advance purchase', insidePeriod:'Within period', afterPeriod:'After period · late / extra expense', otherPeriod:'Other period',
  finishCycle:'Finish / close accounting cycle', finishCycleWarn:'Finish the current accounting cycle? The database will be locked, a JSON backup exported, and the app initialized for the next cycle.', cycleFinished:'Cycle finished. Backup exported and app initialized.',
- exportJson:'Export JSON', copyJson:'Copy JSON', importJson:'Import JSON', initData:'Initialize data',
+ exportJson:'Export ledger data', copyJson:'Copy ledger data', importJson:'Import ledger data', initData:'Initialize data',
  lock:'Lock archive', unlock:'Unlock', pin:'PIN lock', pinHint:'4–6 digits, prevents accidental access only',
  enablePin:'Enable PIN', disablePin:'Disable PIN', forgotPin:'Forgot PIN', theme:'Theme',
  themeSystem:'System', themeLight:'Light', themeDark:'Dark', language:'UI language',
@@ -285,10 +293,15 @@ const I18N={
  dictConflict:'{n} records use values missing from the dictionary and need reclassification.', dictImportConfirm:'Confirm dictionary import',
  dictImported:'Dictionary imported', dictExportSuccess:'Dictionary exported', dictInvalid:'Invalid dictionary file or checksum',
  needsReclass:'Needs reclassification', dictStale:'Dictionary changed - reclassification needed', topLevelCategory:'Top-level category',
- customValue:'Custom…', softReminder:'Soft-deleted records below are a reminder only and are excluded from totals.', time:'Time', deletedAt:'Deleted at'
+ customValue:'Custom…', softReminder:'Soft-deleted records below are a reminder only and are excluded from totals.', time:'Time', deletedAt:'Deleted at',
+ dragSort:'Drag to sort', moveUp:'Move up', moveDown:'Move down',
+ swLocation:'sw.js location', swDefault:'Default (same folder)', swCustom:'Custom public URL', swUrl:'sw.js URL',
+ swHint:'Custom URL must be a public https URL on the same origin as this page. Cross-origin URLs are rejected by the browser.',
+ swInvalid:'Invalid sw.js URL. Enter a public https address.', swCrossOrigin:'The sw.js URL must share this page origin. Cross-origin registration is not allowed.',
+ swRegisterFail:'sw.js registration failed', swUnsupported:'Offline cache is not supported in this environment'
 }
 ,'zh-TW':{
- appTitle:'收支紀錄', startup:'啟動確認', datasetName:'資料檔名稱', lastRecord:'最後紀錄時間',
+ appTitle:'收支紀錄', startup:'啟動確認', datasetName:'帳本名稱', lastRecord:'最後紀錄時間',
  archiveStatus:'歸檔狀態', open:'開放紀錄', locked:'鎖定歸檔', periodMode:'記帳方式',
  standard:'標準週期', custom:'自訂週期', trip:'單次出差', year:'年', month:'月',
  startDate:'起始日', endDate:'結束日', approvalDoc:'出差計畫 / 核准檔案',
@@ -309,7 +322,7 @@ const I18N={
  addAnother:'再增加一筆紀錄', backTop:'回到頂端', relation:'週期歸屬',
  beforePeriod:'週期前 · 提前採購 / 預付', insidePeriod:'週期內', afterPeriod:'週期後 · 延後 / 補記', otherPeriod:'其他週期',
  finishCycle:'結束 / 完成記帳週期', finishCycleWarn:'確定完成目前記帳週期？系統將鎖定資料庫、匯出 JSON 備份，並初始化為下一週期。', cycleFinished:'記帳週期已結束，已匯出備份並初始化。',
- exportJson:'匯出資料(JSON)', copyJson:'複製 JSON', importJson:'匯入資料(JSON)', initData:'初始化資料',
+ exportJson:'匯出帳本資料', copyJson:'複製帳本資料', importJson:'匯入帳本資料', initData:'初始化資料',
  lock:'鎖定歸檔', unlock:'解鎖', pin:'PIN 鎖', pinHint:'4–6 位數字，僅防誤開',
  enablePin:'啟用 PIN', disablePin:'關閉 PIN', forgotPin:'忘記 PIN', theme:'主題',
  themeSystem:'跟隨系統', themeLight:'淺色', themeDark:'深色', language:'介面語言',
@@ -352,7 +365,12 @@ const I18N={
  dictConflict:'有 {n} 筆紀錄使用字典檔中不存在的分類，需重新分類。', dictImportConfirm:'確認匯入字典檔',
  dictImported:'字典檔已匯入', dictExportSuccess:'字典檔已匯出', dictInvalid:'字典檔格式或校驗失敗',
  needsReclass:'需重新分類', dictStale:'字典已變更，需重新分類', topLevelCategory:'一級分類',
- customValue:'自訂…', softReminder:'以下為軟刪除紀錄，僅供提醒，不計入統計', time:'時間', deletedAt:'刪除時間'
+ customValue:'自訂…', softReminder:'以下為軟刪除紀錄，僅供提醒，不計入統計', time:'時間', deletedAt:'刪除時間',
+ dragSort:'拖拉排序', moveUp:'上移', moveDown:'下移',
+ swLocation:'sw.js 位置', swDefault:'預設（同資料夾）', swCustom:'自訂公開網址', swUrl:'sw.js 網路位址',
+ swHint:'自訂網址必須是與本頁面同源的 https 公開位址；跨來源網址會被瀏覽器拒絕註冊。',
+ swInvalid:'sw.js 網址無效。請輸入 https 公開網址。', swCrossOrigin:'sw.js 網址必須與本頁面同源，瀏覽器不允許跨來源註冊。',
+ swRegisterFail:'sw.js 註冊失敗', swUnsupported:'目前環境不支援離線快取'
 }
 };
 
@@ -373,7 +391,7 @@ const state={
   db:null, meta:null, dictionaries:[], records:[],
   view:'startup', form:null, wizard:null, importCandidate:null, dictCandidate:null,
   filters:{keyword:'',category:'',currency:'',company:'',progress:'',period:'current'},
-  selected:new Set(), folderManifest:null, groupByCompany:false,
+  selected:new Set(), folderManifest:null, groupByCompany:false, dragDictId:null,
   dataForm:null, busy:false
 };
 
@@ -454,7 +472,7 @@ function defaultMeta(){
   const now=new Date();
   return {key:META_KEY,datasetId:uid(),datasetName:'',createdAt:localISO(now),updatedAt:localISO(now),
     locked:false,pinEnabled:false,pinSalt:null,pinHash:null,timezone:'device-local',uiLanguage:'zh-CN',
-    theme:'system',lastExportedAt:null,lastExportRecordCount:0,
+    theme:'system',swMode:'default',swUrl:'',lastExportedAt:null,lastExportRecordCount:0,
     periodMode:'standard',period:{year:now.getFullYear(),month:now.getMonth()+1,customDay:26,startDate:'',endDate:'',planDocName:''}};
 }
 function defaultDictionaries(){
@@ -521,8 +539,12 @@ function putMany(store,values){
 async function loadAll(){
   state.meta=await getMeta();
   if(!state.meta){state.meta=defaultMeta();await put('meta',state.meta);}
-  if(!state.meta.theme) state.meta.theme='system';
-  if(!state.meta.uiLanguage) state.meta.uiLanguage='zh-CN';
+  let metaDirty=false;
+  if(!state.meta.theme){state.meta.theme='system';metaDirty=true;}
+  if(!state.meta.uiLanguage){state.meta.uiLanguage='zh-CN';metaDirty=true;}
+  if(!state.meta.swMode){state.meta.swMode='default';metaDirty=true;}
+  if(state.meta.swUrl==null){state.meta.swUrl='';metaDirty=true;}
+  if(metaDirty) await put('meta',state.meta);
   state.dictionaries=await getAll('dictionaries');
   if(!state.dictionaries||!state.dictionaries.length){state.dictionaries=defaultDictionaries();await putMany('dictionaries',state.dictionaries);}
   state.records=await getAll('records')||[];
@@ -540,6 +562,33 @@ function applyTheme(){
   document.querySelector('meta[name="theme-color"]').setAttribute('content',dark?'#202823':'#7C9A85');
 }
 if(window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(state.meta&&state.meta.theme==='system')applyTheme();});
+
+function isPublicHttpsUrl(raw){
+  try{
+    const u=new URL(raw,location.href);
+    if(u.protocol!=='https:') return null;
+    const h=u.hostname.toLowerCase();
+    if(!h||h==='localhost'||h==='127.0.0.1'||h==='::1') return null;
+    if(/^10\./.test(h)||/^192\.168\./.test(h)||/^169\.254\./.test(h)||/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return null;
+    return u;
+  }catch(e){return null;}
+}
+async function registerSW(){
+  if(!('serviceWorker' in navigator)) return {ok:false,msg:t('swUnsupported')};
+  if(location.protocol==='file:'||location.protocol==='http:') return {ok:false,msg:''};
+  let url='./sw.js';
+  const mode=state.meta.swMode||'default';
+  if(mode==='custom'){
+    const u=isPublicHttpsUrl(state.meta.swUrl||'');
+    if(!u) return {ok:false,msg:t('swInvalid')};
+    if(u.origin!==location.origin) return {ok:false,msg:t('swCrossOrigin')};
+    url=u.href;
+  }
+  try{
+    const reg=await navigator.serviceWorker.register(url,{scope:'./'});
+    return {ok:true,registration:reg};
+  }catch(e){return {ok:false,msg:(e&&e.message)||t('swRegisterFail')};}
+}
 
 function isLocked(){return !!(state.meta&&state.meta.locked);}
 function hasData(){return state.records.length>0||!!(state.meta&&state.meta.datasetName);}
@@ -908,6 +957,11 @@ function renderData(){
     '<div class="sep"></div><h3>'+esc(t('settings'))+'</h3><div class="row">'+
     '<div class="field"><label>'+esc(t('language'))+'</label><select id="d-lang">'+['zh-CN','zh-TW','en'].map(l=>'<option value="'+l+'" '+(m.uiLanguage===l?'selected':'')+'>'+(l==='zh-CN'?'简体中文':l==='zh-TW'?'繁體中文':'English')+'</option>').join('')+'</select></div>'+
     '<div class="field"><label>'+esc(t('theme'))+'</label><select id="d-theme">'+['system','light','dark'].map(x=>'<option value="'+x+'" '+(m.theme===x?'selected':'')+'>'+esc(t('theme'+x.charAt(0).toUpperCase()+x.slice(1)))+'</option>').join('')+'</select></div></div>'+
+    '<div class="row"><div class="field"><label>'+esc(t('swLocation'))+'</label><select id="d-sw-mode">'+
+    '<option value="default" '+((m.swMode||'default')==='default'?'selected':'')+'>'+esc(t('swDefault'))+'</option>'+
+    '<option value="custom" '+(m.swMode==='custom'?'selected':'')+'>'+esc(t('swCustom'))+'</option></select></div>'+
+    '<div class="field"><label>'+esc(t('swUrl'))+'</label><input id="d-sw-url" type="url" placeholder="https://example.com/sw.js" value="'+esc(m.swUrl||'')+'" '+((m.swMode||'default')==='default'?'disabled':'')+'></div></div>'+
+    '<div class="sub" style="margin-top:-4px">'+esc(t('swHint'))+'</div>'+
     '<div class="btn-row"><button class="btn small" data-action="save-prefs">'+esc(t('save'))+'</button>'+
     '<button class="btn small '+(m.locked?'':'primary')+'" data-action="toggle-lock">'+esc(m.locked?t('unlock'):t('lock'))+'</button>'+
     '<button class="btn small primary" data-action="finish-cycle">'+esc(t('finishCycle'))+'</button>'+
@@ -1164,14 +1218,47 @@ async function checkInvoices(){
   },true,true);
 }
 
+async function refreshDictEditor(type){
+  if(state.form) normalizeLinkedDefaults(state.form);
+  render();dictModal(type);toast(t('saved'),'ok');
+}
+async function applySiblingOrder(ordered){
+  const first=ordered[0];if(!first)return;
+  const slots=state.dictionaries.filter(d=>d.type===first.type&&d.parentId===first.parentId)
+    .sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(d=>d.sortOrder||0);
+  ordered.forEach((d,i)=>{d.sortOrder=slots[i];});
+  await saveDicts();await refreshDictEditor(first.type);
+}
+async function moveDictBefore(srcId,targetId){
+  const src=state.dictionaries.find(x=>x.id===srcId);
+  const target=state.dictionaries.find(x=>x.id===targetId);
+  if(!src||!target||src.type!==target.type||src.parentId!==target.parentId) return;
+  const sibs=dictItems(src.type,src.parentId);
+  const arr=sibs.filter(x=>x.id!==srcId);
+  const idx=arr.findIndex(x=>x.id===targetId);
+  arr.splice(idx<0?arr.length:idx,0,src);
+  await applySiblingOrder(arr);
+}
+async function moveDictBy(id,delta){
+  const item=state.dictionaries.find(x=>x.id===id);
+  if(!item||!item.parentId) return;
+  const sibs=dictItems(item.type,item.parentId);
+  const i=sibs.findIndex(x=>x.id===id);const j=i+delta;
+  if(i<0||j<0||j>=sibs.length) return;
+  const arr=sibs.slice();const tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;
+  await applySiblingOrder(arr);
+}
 function dictModal(type){
   const items=state.dictionaries.filter(d=>d.type===type).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
   const parents=items.filter(x=>!x.parentId);
   modal('<h2>'+esc(t('editDict'))+' · '+esc(dictTypeName(type))+'</h2><div id="dictList">'+
     items.map(d=>{
       const parent=d.parentId?dictLabel(d.parentId):t('topLevelCategory');
-      const canDel=!d.system;
-      return '<div class="dict-row"><input id="dn-'+d.id+'" value="'+esc(d.label)+'"><span class="sub">'+esc(parent)+'</span>'+
+      const canDel=!d.system;const child=!!d.parentId;
+      const handle=child?'<span class="drag-handle" draggable="true" title="'+esc(t('dragSort'))+'">⋮⋮</span>':'<span></span>';
+      const moves=child?'<span class="btn-row tight" style="margin:0;gap:3px"><button class="btn small" data-action="dict-move" data-dir="-1" data-id="'+d.id+'" title="'+esc(t('moveUp'))+'">↑</button><button class="btn small" data-action="dict-move" data-dir="1" data-id="'+d.id+'" title="'+esc(t('moveDown'))+'">↓</button></span>':'<span></span>';
+      return '<div class="dict-row '+(child?'child':'')+'" data-dict-id="'+d.id+'" data-type="'+type+'" data-parent-id="'+esc(d.parentId||'')+'">'+handle+
+        '<input id="dn-'+d.id+'" value="'+esc(d.label)+'"><span class="sub">'+esc(parent)+'</span>'+moves+
         '<button class="btn small" data-action="dict-rename" data-id="'+d.id+'" data-type="'+type+'">'+esc(t('save'))+'</button>'+
         '<button class="btn small danger" data-action="dict-delete" data-id="'+d.id+'" data-type="'+type+'" '+(canDel?'':'disabled')+'>'+esc(t('remove'))+'</button></div>';
     }).join('')+'</div><div class="sep"></div><h3>'+esc(t('add'))+'</h3>'+
@@ -1270,6 +1357,7 @@ async function handleAction(action,el){
     item.label=name;if(!item.system)item.value=name;await saveDicts();if(state.form)normalizeLinkedDefaults(state.form);render();dictModal(item.type);toast(t('saved'),'ok');return;
   }
   if(action==='dict-delete'){await deleteDict(el.dataset.type,id);return;}
+  if(action==='dict-move'){await moveDictBy(id,Number(el.dataset.dir)||0);return;}
   if(action==='apply-filter'){applyFiltersFromDOM();render();return;}
   if(action==='scroll-top'){
     const app=document.getElementById('app');
@@ -1333,9 +1421,22 @@ async function handleAction(action,el){
     return;
   }
   if(action==='save-prefs'){
-    state.meta.uiLanguage=document.getElementById('d-lang').value;
-    state.meta.theme=document.getElementById('d-theme').value;
-    await saveMeta();setLang(state.meta.uiLanguage);applyTheme();render();toast(t('saved'),'ok');return;
+    const lang=document.getElementById('d-lang').value;
+    const theme=document.getElementById('d-theme').value;
+    const swMode=document.getElementById('d-sw-mode').value;
+    const rawUrl=document.getElementById('d-sw-url').value.trim();
+    let swUrl='';
+    if(swMode==='custom'){
+      const u=isPublicHttpsUrl(rawUrl);
+      if(!u){toast(t('swInvalid'),'danger');return;}
+      if(u.origin!==location.origin){toast(t('swCrossOrigin'),'danger');return;}
+      swUrl=u.href;
+    }
+    state.meta.uiLanguage=lang;state.meta.theme=theme;state.meta.swMode=swMode;state.meta.swUrl=swUrl;
+    await saveMeta();setLang(state.meta.uiLanguage);applyTheme();render();
+    const swRes=await registerSW();
+    if(!swRes.ok&&swRes.msg)toast(swRes.msg,'danger');else toast(t('saved'),'ok');
+    return;
   }
   if(action==='toggle-lock'){
     if(isLocked()){
@@ -1449,6 +1550,7 @@ document.addEventListener('change',async e=>{
   if(t.id&&t.id.indexOf('flt-')===0){applyFiltersFromDOM();render();return;}
   if(t.id==='group-company'){state.groupByCompany=t.checked;render();return;}
   if(t.id==='batchCompanySelect'){const input=document.getElementById('batchCompanyCustom');if(input&&t.value)input.value=t.value;return;}
+  if(t.id==='d-sw-mode'){const input=document.getElementById('d-sw-url');if(input)input.disabled=t.value!=='custom';return;}
   if(t.id==='wizMode'){syncWizardInputs();render();return;}
   if(t.id==='f-pay1'||t.id==='f-cat1'||t.id==='f-reimb'){
     syncFormInputs();
@@ -1462,6 +1564,28 @@ document.addEventListener('input',e=>{
   autoGrow(el);
   if(state.view==='form'&&el.id&&el.id.indexOf('f-')===0)syncFormInputs();
 });
+document.addEventListener('dragstart',e=>{
+  const row=e.target.closest&&e.target.closest('.dict-row.child');
+  if(!row||!e.target.classList.contains('drag-handle'))return;
+  state.dragDictId=row.dataset.dictId;
+  row.classList.add('dragging');
+  if(e.dataTransfer){e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',state.dragDictId);}
+});
+document.addEventListener('dragover',e=>{
+  const row=e.target.closest&&e.target.closest('.dict-row.child');
+  if(row&&state.dragDictId&&row.dataset.dictId!==state.dragDictId){e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect='move';}
+});
+document.addEventListener('drop',async e=>{
+  const row=e.target.closest&&e.target.closest('.dict-row.child');
+  if(!row||!state.dragDictId)return;
+  e.preventDefault();
+  const src=state.dragDictId;state.dragDictId=null;
+  try{await moveDictBefore(src,row.dataset.dictId);}catch(err){console.error(err);toast(String(err&&err.message||err),'danger');}
+});
+document.addEventListener('dragend',()=>{
+  document.querySelectorAll('.dict-row.dragging').forEach(x=>x.classList.remove('dragging'));
+  state.dragDictId=null;
+});
 
 async function init(){
   try{
@@ -1471,9 +1595,7 @@ async function init(){
       state.view='wizard';
     }
     render();
-    if('serviceWorker' in navigator&&location.protocol!=='file:'&&location.protocol!=='http:'){
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
-    }
+    registerSW().then(r=>{if(!r.ok&&r.msg) console.warn('[SW]',r.msg);});
   }catch(err){console.error(err);document.getElementById('app').innerHTML='<div class="card"><h2>Initialization failed</h2><p>'+esc(err.message||err)+'</p></div>';}
 }
 init();
