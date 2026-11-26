@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#7C9A85">
-<title>Expense Tracker</title>
+<title>收支记录 · Expense Tracker</title>
 <style>
 :root{
   --bg:#F6F8F4; --surface:#FFFFFF; --surface2:#EEF3EC; --surface3:#E4ECE2;
@@ -167,14 +167,17 @@ const I18N={
  unclassified:'未分类', all:'全部', keyword:'关键字', filter:'筛选', allPeriod:'全部周期',
  currentPeriod:'当前周期', incomeTotal:'收入合计', expenseTotal:'支出合计', net:'净额',
  softDeleted:'软删除', restore:'恢复', purge:'彻底删除', confirmPurge:'确定彻底删除？不可恢复。',
- confirmDelete:'确定删除这条记录？', noRecords:'当前周期没有记录', noSoft:'没有软删除记录',
+ confirmDelete:'确定删除这条记录？', noRecords:'当前筛选没有记录', noSoft:'没有软删除记录',
+ addAnother:'再增加一笔记录', backTop:'回到顶部', relation:'周期归属',
+ beforePeriod:'周期前 · 提前采购 / 预付', insidePeriod:'周期内', afterPeriod:'周期后 · 延后 / 补记', otherPeriod:'其他周期',
+ finishCycle:'结束 / 完成记账周期', finishCycleWarn:'确定完成当前记账周期？系统将锁定数据库、导出 JSON 备份，并初始化为下一周期。', cycleFinished:'记账周期已结束，已导出备份并初始化。',
  exportJson:'导出数据(JSON)', copyJson:'复制JSON', importJson:'导入数据(JSON)', initData:'初始化数据',
  lock:'锁定归档', unlock:'解锁', pin:'PIN 锁', pinHint:'4–6 位数字，仅防误开',
  enablePin:'启用 PIN', disablePin:'关闭 PIN', forgotPin:'忘记 PIN', theme:'主题',
  themeSystem:'跟随系统', themeLight:'浅色', themeDark:'深色', language:'界面语言',
  exportCsv:'导出 CSV', exportPdf:'导出 PDF', groupByCompany:'按报销公司分组',
  selectAll:'全选', batchCompany:'批量改报销公司', batchProgress:'批量改进度', batchDelete:'批量软删除',
- apply:'应用', periodOutside:'切换后，有 {n} 笔记录不在新周期内。记录会保留，但不会显示在管理页。',
+ apply:'应用', periodOutside:'切换后，有 {n} 笔记录发生在新周期之外。记录会保留，并归入“周期前 / 周期后”区块。',
  importPreview:'导入前预览', recordCount:'记录数', dictCount:'字典项数', checksum:'校验和',
  exportedAt:'导出时间', confirmImport:'确认导入并覆盖', validationFail:'文件校验失败：{msg}',
  importGuide:'请先将当前数据导出备份，初始化清空后再导入。', duplicateInvoice:'发票文件重名',
@@ -226,14 +229,17 @@ const I18N={
  keyword:'Keyword', filter:'Filter', allPeriod:'All periods', currentPeriod:'Current period',
  incomeTotal:'Income total', expenseTotal:'Expense total', net:'Net', softDeleted:'Soft deleted',
  restore:'Restore', purge:'Purge', confirmPurge:'Purge permanently? This cannot be undone.',
- confirmDelete:'Delete this record?', noRecords:'No records in the current period', noSoft:'No soft-deleted records',
+ confirmDelete:'Delete this record?', noRecords:'No records match the current filter', noSoft:'No soft-deleted records',
+ addAnother:'Add another record', backTop:'Back to top', relation:'Period relation',
+ beforePeriod:'Before period · advance purchase', insidePeriod:'Within period', afterPeriod:'After period · late / extra expense', otherPeriod:'Other period',
+ finishCycle:'Finish / close accounting cycle', finishCycleWarn:'Finish the current accounting cycle? The database will be locked, a JSON backup exported, and the app initialized for the next cycle.', cycleFinished:'Cycle finished. Backup exported and app initialized.',
  exportJson:'Export JSON', copyJson:'Copy JSON', importJson:'Import JSON', initData:'Initialize data',
  lock:'Lock archive', unlock:'Unlock', pin:'PIN lock', pinHint:'4–6 digits, prevents accidental access only',
  enablePin:'Enable PIN', disablePin:'Disable PIN', forgotPin:'Forgot PIN', theme:'Theme',
  themeSystem:'System', themeLight:'Light', themeDark:'Dark', language:'UI language',
  exportCsv:'Export CSV', exportPdf:'Export PDF', groupByCompany:'Group by company',
  selectAll:'Select all', batchCompany:'Batch change company', batchProgress:'Batch change status',
- batchDelete:'Batch soft delete', apply:'Apply', periodOutside:'After switching, {n} records fall outside the new period. They are kept but hidden from the list.',
+ batchDelete:'Batch soft delete', apply:'Apply', periodOutside:'After switching, {n} records occur outside the new period. They are kept and grouped under "Before / After period".',
  importPreview:'Import preview', recordCount:'Records', dictCount:'Dictionary items', checksum:'Checksum',
  exportedAt:'Exported at', confirmImport:'Confirm and overwrite', validationFail:'Validation failed: {msg}',
  importGuide:'Export your current data, initialize to empty, then import again.', duplicateInvoice:'Duplicate invoice',
@@ -285,14 +291,17 @@ const I18N={
  unclassified:'未分類', all:'全部', keyword:'關鍵字', filter:'篩選', allPeriod:'全部週期',
  currentPeriod:'當前週期', incomeTotal:'收入合計', expenseTotal:'支出合計', net:'淨額',
  softDeleted:'軟刪除', restore:'還原', purge:'徹底刪除', confirmPurge:'確定徹底刪除？無法復原。',
- confirmDelete:'確定刪除這筆紀錄？', noRecords:'當前週期沒有紀錄', noSoft:'沒有軟刪除紀錄',
+ confirmDelete:'確定刪除這筆紀錄？', noRecords:'目前篩選沒有紀錄', noSoft:'沒有軟刪除紀錄',
+ addAnother:'再增加一筆紀錄', backTop:'回到頂端', relation:'週期歸屬',
+ beforePeriod:'週期前 · 提前採購 / 預付', insidePeriod:'週期內', afterPeriod:'週期後 · 延後 / 補記', otherPeriod:'其他週期',
+ finishCycle:'結束 / 完成記帳週期', finishCycleWarn:'確定完成目前記帳週期？系統將鎖定資料庫、匯出 JSON 備份，並初始化為下一週期。', cycleFinished:'記帳週期已結束，已匯出備份並初始化。',
  exportJson:'匯出資料(JSON)', copyJson:'複製 JSON', importJson:'匯入資料(JSON)', initData:'初始化資料',
  lock:'鎖定歸檔', unlock:'解鎖', pin:'PIN 鎖', pinHint:'4–6 位數字，僅防誤開',
  enablePin:'啟用 PIN', disablePin:'關閉 PIN', forgotPin:'忘記 PIN', theme:'主題',
  themeSystem:'跟隨系統', themeLight:'淺色', themeDark:'深色', language:'介面語言',
  exportCsv:'匯出 CSV', exportPdf:'匯出 PDF', groupByCompany:'依報銷公司分組',
  selectAll:'全選', batchCompany:'批次改報銷公司', batchProgress:'批次改進度', batchDelete:'批次軟刪除',
- apply:'套用', periodOutside:'切換後，有 {n} 筆紀錄不在新週期內。紀錄會保留，但不會顯示在管理頁。',
+ apply:'套用', periodOutside:'切換後，有 {n} 筆紀錄發生在新週期之外。紀錄會保留，並歸入「週期前 / 週期後」區塊。',
  importPreview:'匯入前預覽', recordCount:'紀錄數', dictCount:'字典項目數', checksum:'校驗碼',
  exportedAt:'匯出時間', confirmImport:'確認匯入並覆蓋', validationFail:'檔案校驗失敗：{msg}',
  importGuide:'請先將目前資料匯出備份，初始化清空後再匯入。', duplicateInvoice:'發票檔案重名',
@@ -543,15 +552,44 @@ function computePeriod(meta){
   else{const max=new Date(ey,em,0).getDate();endDay=Math.min(n-1,max);}
   return {start,end:ey+'-'+String(em).padStart(2,'0')+'-'+String(endDay).padStart(2,'0')};
 }
-function currentPeriod(){const p=computePeriod(state.meta);return {start:p.start+'T00:00:00',end:p.end+'T23:59:59'};}
+function storedPeriodBounds(meta){
+  const p=meta&&meta.period||{};
+  if(p.startDate&&p.endDate) return {start:p.startDate,end:p.endDate};
+  return computePeriod(meta);
+}
+function currentPeriod(){const p=storedPeriodBounds(state.meta);return {start:p.start+'T00:00:00',end:p.end+'T23:59:59'};}
+function periodRefCurrent(){
+  const p=storedPeriodBounds(state.meta);
+  return {datasetId:state.meta.datasetId||'',mode:state.meta.periodMode||'standard',start:p.start,end:p.end,
+    planDocName:(state.meta.period&&state.meta.period.planDocName)||''};
+}
+function periodRefEqual(a,b){
+  if(!a||!b) return false;
+  return a.datasetId===b.datasetId&&a.mode===b.mode&&a.start===b.start&&a.end===b.end;
+}
+function belongsToCurrentPeriod(r){
+  return !(r&&r.periodRef)||periodRefEqual(r.periodRef,periodRefCurrent());
+}
 function inPeriod(r,period){
   if(!period||!period.start||!period.end) return true;
   const d=(r.occurredAt||'').slice(0,10);
   const s=String(period.start).slice(0,10), e=String(period.end).slice(0,10);
   return d>=s&&d<=e;
 }
+function periodRelation(r,ref){
+  const p=ref||storedPeriodBounds(state.meta);
+  if(!p.start||!p.end) return 'inside';
+  const d=(r.occurredAt||'').slice(0,10);
+  if(!d) return 'inside';
+  if(d<String(p.start).slice(0,10)) return 'before';
+  if(d>String(p.end).slice(0,10)) return 'after';
+  return 'inside';
+}
+function relationLabel(rel){
+  return t(rel==='before'?'beforePeriod':rel==='after'?'afterPeriod':rel==='other'?'otherPeriod':'insidePeriod');
+}
 function periodLabel(){
-  const p=computePeriod(state.meta);
+  const p=storedPeriodBounds(state.meta);
   const mode=t(state.meta.periodMode==='standard'?'standard':state.meta.periodMode==='custom'?'custom':'trip');
   if(state.meta.periodMode==='standard') return mode+' · '+state.meta.period.year+' '+t('year')+' '+state.meta.period.month+' '+t('month');
   return mode+' · '+p.start+' → '+p.end;
@@ -628,21 +666,41 @@ function renderMenu(){
     '</div><div class="btn-row"><button class="btn ghost" data-action="back-startup">'+esc(t('back'))+'</button></div></div>';
 }
 
+function firstDictChild(type,parentLabel){
+  const p=dictItems(type,null).find(x=>x.label===parentLabel);
+  if(!p) return '';
+  const kids=dictItems(type).filter(x=>x.parentId===p.id);
+  return kids.length?kids[0].label:'';
+}
+function normalizeLinkedDefaults(f){
+  if(!f) return f;
+  const payL1=dictItems('payments',null).filter(x=>x.label!=='未分类');
+  if(payL1.length&&!payL1.some(x=>x.label===f.paymentL1)) f.paymentL1=payL1[0].label;
+  const payKids=dictItems('payments').filter(x=>x.parentId===(dictItems('payments').find(p=>p.label===f.paymentL1)||{}).id);
+  if(payKids.length&&!payKids.some(x=>x.label===f.paymentL2)) f.paymentL2=payKids[0].label;
+  const catL1=dictItems('categories',null).filter(x=>x.label!=='未分类');
+  if(catL1.length&&!catL1.some(x=>x.label===f.categoryL1)) f.categoryL1=catL1[0].label;
+  const catKids=dictItems('categories').filter(x=>x.parentId===(dictItems('categories').find(p=>p.label===f.categoryL1)||{}).id);
+  if(catKids.length&&!catKids.some(x=>x.label===f.categoryL2)) f.categoryL2=catKids[0].label;
+  return f;
+}
 function emptyForm(){
   const now=new Date();
-  return {id:null,type:'expense',purpose:'business',amountText:'',currency:'RMB',
+  return normalizeLinkedDefaults({id:null,type:'expense',purpose:'business',amountText:'',currency:'RMB',
     paymentL1:'APP',paymentL2:'支付宝',categoryL1:'未分类',categoryL2:'未分类',
     reimbursementValue:'yes',reimbursementEntity:'上海公司',progress:'unsubmitted',
     brief:'',note:'',invoice:{name:'',relativePath:'',status:'unchecked',checkedAt:null},
-    occurredDate:dateInputValue(now),occurredTime:timeInputValue(now)};
+    periodRef:periodRefCurrent(),
+    occurredDate:dateInputValue(now),occurredTime:timeInputValue(now)});
 }
 function recordToForm(r){
-  return {id:r.id,type:r.type,purpose:r.purpose,amountText:money(r.amountCents),currency:r.currency,
+  return normalizeLinkedDefaults({id:r.id,type:r.type,purpose:r.purpose,amountText:money(r.amountCents),currency:r.currency,
     paymentL1:r.paymentL1||'',paymentL2:r.paymentL2||'',categoryL1:r.categoryL1||'未分类',categoryL2:r.categoryL2||'未分类',
     reimbursementValue:r.reimbursable?'yes':'no',reimbursementEntity:r.reimbursementEntity||'未分类',
     progress:r.reimbursementStatus||'unsubmitted',brief:r.brief||'',note:r.note||'',
     invoice:r.invoice||{name:'',relativePath:'',status:'unchecked',checkedAt:null},
-    occurredDate:(r.occurredAt||'').slice(0,10),occurredTime:(r.occurredAt||'').slice(11,16)};
+    periodRef:r.periodRef||periodRefCurrent(),
+    occurredDate:(r.occurredAt||'').slice(0,10),occurredTime:(r.occurredAt||'').slice(11,16)});
 }
 function opts(items,current,emptyLabel){
   let s=emptyLabel?'<option value="">'+esc(emptyLabel)+'</option>':'';
@@ -650,7 +708,7 @@ function opts(items,current,emptyLabel){
   return s;
 }
 function renderForm(){
-  const f=state.form;
+  const f=normalizeLinkedDefaults(state.form);
   if(!f) return '';
   const payL1=dictItems('payments',null).filter(x=>x.label!=='未分类');
   const payL2=dictItems('payments').filter(x=>x.parentId&&x.parentId===dictItems('payments').find(p=>p.label===f.paymentL1)?.id);
@@ -687,9 +745,8 @@ function fieldSelect(label,id,items,display,values,valueId){
 }
 
 function filteredRecords(){
-  const period=state.filters.period==='all'?null:currentPeriod();
   return activeRecords().filter(r=>{
-    if(!inPeriod(r,period)) return false;
+    if(state.filters.period!=='all'&&!belongsToCurrentPeriod(r)) return false;
     const f=state.filters;
     if(f.category&&r.categoryL1!==f.category) return false;
     if(f.currency&&r.currency!==f.currency) return false;
@@ -707,22 +764,32 @@ function renderManage(){
   const prog=dictItems('progresses',null);
   const soft=state.records.filter(r=>r.deletedAt);
   const oldSoft=soft.filter(r=>daysBetween(r.deletedAt)>=30).length;
+  const curRef=periodRefCurrent();
+  const relOf=r=>(r.periodRef&&!periodRefEqual(r.periodRef,curRef))?'other':periodRelation(r,r.periodRef||curRef);
+  const groups={before:[],inside:[],after:[],other:[]};
+  recs.forEach(r=>groups[relOf(r)].push(r));
   let stats='';
   const byCurr={};
   recs.forEach(r=>{const c=r.currency||'-';byCurr[c]=byCurr[c]||{inc:0,exp:0};if(r.type==='income')byCurr[c].inc+=r.amountCents;else byCurr[c].exp+=r.amountCents;});
   Object.keys(byCurr).forEach(c=>{stats+='<div class="stat"><div class="k">'+esc(c)+' · '+esc(t('incomeTotal'))+'</div><div class="v amount income">'+money(byCurr[c].inc)+'</div>'+
     '<div class="k">'+esc(t('expenseTotal'))+'</div><div class="v amount expense">'+money(byCurr[c].exp)+'</div>'+
     '<div class="k">'+esc(t('net'))+'</div><div class="v">'+money(byCurr[c].inc-byCurr[c].exp)+'</div></div>';});
-  const list=recs.map(r=>{
+  const row=r=>{
+    const rel=relOf(r);
     const inv=r.invoice&&r.invoice.name?(r.invoice.status==='missing'?'<span class="missing">'+esc(t('invoiceMissing'))+': '+esc(r.invoice.name)+'</span>':esc(r.invoice.name)):'-';
     return '<div class="list-item"><div class="list-head"><div><label><input type="checkbox" class="row-check" data-id="'+esc(r.id)+'" '+(state.selected.has(r.id)?'checked':'')+'> <span class="list-title">'+esc(r.brief||t('unclassified'))+'</span></label>'+
-      '<div class="list-meta">'+esc(formatOccurred(r.occurredAt))+' · '+esc(r.categoryL1)+' / '+esc(r.categoryL2)+' · '+esc(r.paymentL1)+' / '+esc(r.paymentL2)+' · '+esc(inv)+'</div></div>'+
+      '<div class="list-meta">'+esc(formatOccurred(r.occurredAt))+' · '+esc(r.categoryL1)+' / '+esc(r.categoryL2)+' · '+esc(r.paymentL1)+' / '+esc(r.paymentL2)+' · '+esc(inv)+
+      ' · <span class="chip">'+esc(relationLabel(rel))+'</span></div></div>'+
       '<div style="text-align:right"><div class="amount '+r.type+'">'+(r.type==='income'?'+':'-')+money(r.amountCents)+' '+esc(r.currency)+'</div>'+
       '<div class="sub">'+esc(r.reimbursable?t('reimbursable')+' · '+esc(r.reimbursementEntity):t('notReimbursable'))+' · '+esc(progressLabel(r.reimbursementStatus))+'</div></div></div>'+
       '<div class="btn-row"><button class="btn small" data-action="edit-record" data-id="'+esc(r.id)+'">'+esc(t('edit'))+'</button>'+
       '<button class="btn small" data-action="copy-record" data-id="'+esc(r.id)+'">'+esc(t('copyRecord'))+'</button>'+
       '<button class="btn small danger" data-action="delete-record" data-id="'+esc(r.id)+'">'+esc(t('delete'))+'</button></div></div>';
-  }).join('')||'<div class="sub">'+esc(t('noRecords'))+'</div>';
+  };
+  const section=(title,list)=>list.length?'<h3 style="margin-top:14px">'+esc(title)+' <span class="sub">'+list.length+' '+esc(t('records'))+'</span></h3><div class="list">'+list.map(row).join('')+'</div>':'';
+  const list=recs.length?
+    section(t('beforePeriod'),groups.before)+section(t('insidePeriod'),groups.inside)+section(t('afterPeriod'),groups.after)+section(t('otherPeriod'),groups.other):
+    '<div class="sub">'+esc(t('noRecords'))+'</div>';
   return header()+'<div class="card wide"><h2>'+esc(t('manageRecords'))+'</h2>'+
     '<div class="row"><div class="field"><label>'+esc(t('keyword'))+'</label><input id="flt-keyword" value="'+esc(state.filters.keyword)+'"></div>'+
     '<div class="field"><label>'+esc(t('category'))+'</label><select id="flt-category"><option value="">'+esc(t('all'))+'</option>'+opts(cats,'')+'</select></div>'+
@@ -740,14 +807,15 @@ function renderManage(){
     '<button class="btn small" data-action="batch-progress">'+esc(t('batchProgress'))+'</button>'+
     '<button class="btn small danger" data-action="batch-delete">'+esc(t('batchDelete'))+'</button>'+
     '<span class="sub">'+state.selected.size+' '+esc(t('records'))+'</span></div>'+
-    '<div class="list">'+list+'</div>'+
+    '<div class="row tight" style="justify-content:flex-end;margin-bottom:8px"><button class="btn primary small" data-action="new-record">'+esc(t('addAnother'))+'</button></div>'+
+    list+
     '<div class="stat-grid">'+(stats||'<div class="sub">'+esc(t('noData'))+'</div>')+'</div>'+
     '<div class="sep"></div><h3>'+esc(t('softDeleted'))+'</h3>'+
     (oldSoft?'<div class="chip warn">'+esc(t('softOld',{n:oldSoft}))+'</div>':'')+
     (soft.map(r=>'<div class="list-item"><div class="list-head"><div><div class="list-title">'+esc(r.brief||t('unclassified'))+'</div><div class="list-meta">'+esc(formatShort(r.deletedAt))+'</div></div>'+
       '<div class="btn-row"><button class="btn small" data-action="restore-record" data-id="'+esc(r.id)+'">'+esc(t('restore'))+'</button>'+
       '<button class="btn small danger" data-action="purge-record" data-id="'+esc(r.id)+'">'+esc(t('purge'))+'</button></div></div></div>').join('')||'<div class="sub">'+esc(t('noSoft'))+'</div>')+
-    '<div class="btn-row"><button class="btn ghost" data-action="back-menu">'+esc(t('back'))+'</button></div></div>';
+    '<div class="btn-row"><button class="btn ghost" data-action="back-menu">'+esc(t('back'))+'</button><button class="btn" data-action="scroll-top">'+esc(t('backTop'))+'</button></div></div>';
 }
 function progressLabel(v){const d=state.dictionaries.find(x=>x.type==='progresses'&&x.value===v);return d?d.label:t('unclassified');}
 
@@ -773,6 +841,7 @@ function renderData(){
     '<div class="field"><label>'+esc(t('theme'))+'</label><select id="d-theme">'+['system','light','dark'].map(x=>'<option value="'+x+'" '+(m.theme===x?'selected':'')+'>'+esc(t('theme'+x.charAt(0).toUpperCase()+x.slice(1)))+'</option>').join('')+'</select></div></div>'+
     '<div class="btn-row"><button class="btn small" data-action="save-prefs">'+esc(t('save'))+'</button>'+
     '<button class="btn small '+(m.locked?'':'primary')+'" data-action="toggle-lock">'+esc(m.locked?t('unlock'):t('lock'))+'</button>'+
+    '<button class="btn small primary" data-action="finish-cycle">'+esc(t('finishCycle'))+'</button>'+
     '<button class="btn small" data-action="toggle-pin">'+esc(m.pinEnabled?t('disablePin'):t('enablePin'))+'</button>'+
     (m.pinEnabled?'<button class="btn small danger" data-action="forgot-pin">'+esc(t('forgotPin'))+'</button>':'')+'</div>'+
     '<div class="sep"></div><h3>'+esc(t('other'))+'</h3><div class="btn-row">'+
@@ -834,6 +903,7 @@ async function saveFormRecord(force){
   const r={
     id:f.id||uid(),createdAt:f.id?(state.records.find(x=>x.id===f.id)||{}).createdAt||now:now,
     updatedAt:now,deletedAt:null,deviceId:(state.meta&&state.meta.datasetId)||uid(),
+    periodRef:f.periodRef||periodRefCurrent(),
     type:f.type,purpose:f.purpose,amountCents:cents,currency:f.currency,
     paymentL1:f.paymentL1,paymentL2:f.paymentL2,categoryL1:f.categoryL1,categoryL2:f.categoryL2,
     reimbursable:f.reimbursementValue==='yes',reimbursementEntity:f.reimbursementValue==='yes'?f.reimbursementEntity:'未分类',
@@ -987,6 +1057,16 @@ async function deleteDict(type,id){
   },true);
 }
 
+function applyFiltersFromDOM(){
+  const q=id=>document.getElementById(id);
+  if(q('flt-keyword')) state.filters.keyword=q('flt-keyword').value.trim();
+  if(q('flt-category')) state.filters.category=q('flt-category').value;
+  if(q('flt-currency')) state.filters.currency=q('flt-currency').value;
+  if(q('flt-company')) state.filters.company=q('flt-company').value;
+  if(q('flt-progress')) state.filters.progress=q('flt-progress').value;
+  if(q('flt-period')) state.filters.period=q('flt-period').value;
+  state.selected.clear();
+}
 async function handleAction(action,el){
   const id=el&&el.dataset?el.dataset.id:null;
   if(action==='modal-close'||action==='modal-mask'){if(action==='modal-mask'&&el.classList.contains('modal-mask')&&event.target!==el)return;closeModal();return;}
@@ -1023,7 +1103,7 @@ async function handleAction(action,el){
   if(action==='go-manage'){state.view='manage';render();return;}
   if(action==='go-data'){state.view='data';render();return;}
   if(action==='edit-record'){if(!guard())return;const r=state.records.find(x=>x.id===id);if(r){state.form=recordToForm(r);state.view='form';render();}return;}
-  if(action==='copy-record'){if(!guard())return;const r=state.records.find(x=>x.id===id);if(r){const f=recordToForm(r);f.id=null;f.occurredDate=dateInputValue(new Date());f.occurredTime=timeInputValue(new Date());f.invoice={name:'',relativePath:'',status:'unchecked',checkedAt:null};f.progress='unsubmitted';state.form=f;state.view='form';render();}return;}
+  if(action==='copy-record'){if(!guard())return;const r=state.records.find(x=>x.id===id);if(r){const f=recordToForm(r);f.id=null;f.periodRef=periodRefCurrent();f.occurredDate=dateInputValue(new Date());f.occurredTime=timeInputValue(new Date());f.invoice={name:'',relativePath:'',status:'unchecked',checkedAt:null};f.progress='unsubmitted';state.form=f;state.view='form';render();}return;}
   if(action==='delete-record'){if(!guard())return;confirmBox(t('confirmDelete'),async()=>{const r=state.records.find(x=>x.id===id);if(r){r.deletedAt=localISO(new Date());r.updatedAt=r.deletedAt;await saveRecord(r);}render();toast(t('deleted'),'ok');},true);return;}
   if(action==='restore-record'){if(!guard())return;confirmBox(t('confirmRestore'),async()=>{const r=state.records.find(x=>x.id===id);if(r){r.deletedAt=null;r.updatedAt=localISO(new Date());await saveRecord(r);}render();toast(t('restored'),'ok');});return;}
   if(action==='purge-record'){if(!guard())return;confirmBox(t('confirmPurge'),async()=>{await del('records',id);state.records=state.records.filter(x=>x.id!==id);render();toast(t('purged'),'ok');},true);return;}
@@ -1044,14 +1124,12 @@ async function handleAction(action,el){
     item.label=name;if(!item.system)item.value=name;await saveDicts();dictModal(item.type);toast(t('saved'),'ok');return;
   }
   if(action==='dict-delete'){await deleteDict(el.dataset.type,id);return;}
-  if(action==='apply-filter'){
-    state.filters.keyword=document.getElementById('flt-keyword').value.trim();
-    state.filters.category=document.getElementById('flt-category').value;
-    state.filters.currency=document.getElementById('flt-currency').value;
-    state.filters.company=document.getElementById('flt-company').value;
-    state.filters.progress=document.getElementById('flt-progress').value;
-    state.filters.period=document.getElementById('flt-period').value;
-    state.selected.clear();render();return;
+  if(action==='apply-filter'){applyFiltersFromDOM();render();return;}
+  if(action==='scroll-top'){
+    const app=document.getElementById('app');
+    if(app) app.scrollTop=0;
+    window.scrollTo({top:0,behavior:'smooth'});
+    return;
   }
   if(action==='select-all'){const recs=filteredRecords();if(state.selected.size===recs.length)state.selected.clear();else recs.forEach(r=>state.selected.add(r.id));render();return;}
   if(action==='batch-company'||action==='batch-progress'||action==='batch-delete'){
@@ -1091,9 +1169,11 @@ async function handleAction(action,el){
       customDay:Math.min(31,Math.max(1,Number(document.getElementById('d-day').value)||26)),
       startDate:document.getElementById('d-start').value,endDate:document.getElementById('d-end').value};
     m.periodMode=document.getElementById('d-mode').value;
-    const test={...m};const pp=computePeriod(test);
-    if(m.periodMode==='trip'){m.period.startDate=pp.start;m.period.endDate=pp.end;}
-    const outside=activeRecords().filter(r=>!inPeriod(r,{start:pp.start+'T00:00:00',end:pp.end+'T23:59:59'})).length;
+    const test={...m,period:{...m.period}};
+    if(m.periodMode!=='trip'){test.period.startDate='';test.period.endDate='';}
+    const pp=storedPeriodBounds(test);
+    m.period.startDate=pp.start;m.period.endDate=pp.end;
+    const outside=activeRecords().filter(r=>!inPeriod(r,{start:pp.start,end:pp.end})).length;
     const apply=async()=>{state.meta=m;await saveMeta();render();toast(t('saved'),'ok');};
     if(outside)confirmBox(t('periodOutside',{n:outside}),apply);else await apply();
     return;
@@ -1140,6 +1220,15 @@ async function handleAction(action,el){
     pickFile('.json,application/json',files=>readImportFile(files[0]));return;
   }
   if(action==='choose-folder'){pickFile('',files=>{state.folderManifest=new Set(files.map(f=>(f.webkitRelativePath||f.name).toLowerCase()));toast(t('chooseFolder'),'ok');},true,true);return;}
+  if(action==='finish-cycle'){
+    const run=async()=>{
+      if(!state.meta.locked){state.meta.locked=true;await saveMeta();}
+      await exportJSON();
+      await initializeData();
+      toast(t('cycleFinished'),'ok');
+    };
+    confirmBox(t('finishCycleWarn'),run,true);return;
+  }
   if(action==='initialize'){
     if(!guard())return;
     confirmBox(t('initReminder'),()=>confirmBox(t('confirmInit'),async()=>{await exportJSON();await initializeData();},true));return;
@@ -1203,6 +1292,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('change',async e=>{
   const t=e.target;
   if(t.classList.contains('row-check')){if(t.checked)state.selected.add(t.dataset.id);else state.selected.delete(t.dataset.id);return;}
+  if(t.id&&t.id.indexOf('flt-')===0){applyFiltersFromDOM();render();return;}
   if(t.id==='wizMode'){syncWizardInputs();render();return;}
   if(t.id==='f-pay1'||t.id==='f-cat1'||t.id==='f-reimb'){
     syncFormInputs();
